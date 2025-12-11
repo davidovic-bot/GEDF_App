@@ -1,7 +1,13 @@
 <?php
 
+
+
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\ParapheurController;
+use App\Http\Controllers\StatistiqueController;
+use App\Http\Controllers\AdminController;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -14,7 +20,7 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 
 // Page d'accueil par défaut (optionnelle)
 Route::get('/', function () {
-    return redirect('/login');
+    return view('auth.login');
 });
 
 // Routes d'authentification Breeze
@@ -82,3 +88,8 @@ Route::middleware(['auth', 'issuperadmin'])->prefix('administration')->group(fun
     Route::get('/parametres', [AdminController::class, 'parametres'])->name('admin.parametres');
     Route::get('/audit', [AdminController::class, 'audit'])->name('admin.audit');
 });
+
+Route::get('/dashboard-superadmin', function () {
+    return view('dashboard-superadmin');
+})->name('dashboard.superadmin');
+

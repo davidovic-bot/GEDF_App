@@ -1,503 +1,318 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" x-data="dashboardApp()" x-cloak>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GDF - Tableau de bord Super Admin</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <title>GDF - Tableau de bord DRS Parapheur</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Alpine.js CDN -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    
+    <!-- Configuration Tailwind -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        // Topbar bleu GDF (différent du bleu drapeau)
+                        'topbar-blue': '#1D4ED8',
+                        // Couleurs drapeau Gabon
+                        'flag-green': '#009E60',
+                        'flag-yellow': '#FCD116',
+                        'flag-blue': '#3B82F6', // Bleu drapeau (différent)
+                    }
+                }
+            }
+        }
+    </script>
+    
     <style>
-        /* ===== STYLES (identique à avant) ===== */
-        :root {
-            --primary-dark: #0f172a;
-            --primary: #1e293b;
-            --secondary: #334155;
-            --accent: #475569;
-            --success: #059669;
-            --warning: #d97706;
-            --danger: #dc2626;
-            --info: #2563eb;
-            --light: #f1f5f9;
-            --white: #ffffff;
-            --border: #cbd5e1;
-            --text-dark: #0f172a;
-            --text: #475569;
+        [x-cloak] { display: none !important; }
+        
+        /* Barre tricolore Gabon */
+        .flag-bar {
+            height: 4px;
+            background: linear-gradient(90deg, 
+                #009E60 33.33%, 
+                #FCD116 33.33%, #FCD116 66.66%, 
+                #3B82F6 66.66% /* Bleu drapeau différent */
+            );
         }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', 'Inter', system-ui, sans-serif;
-        }
-
-        body {
-            background-color: var(--light);
-            color: var(--text-dark);
-            min-height: 100vh;
-            overflow-x: hidden;
-        }
-
-        .main-header {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            background: var(--primary-dark);
-            color: var(--white);
-            padding: 0 2rem;
-            height: 70px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-            z-index: 1000;
-            border-bottom: 1px solid var(--secondary);
-        }
-
-        .logo-container {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        .logo {
-            width: 50px;
-            height: 50px;
-            background: linear-gradient(135deg, var(--success) 0%, var(--info) 100%);
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 800;
-            color: var(--white);
-            font-size: 1.5rem;
-            box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
-        }
-
-        .user-menu-container {
-            position: relative;
-        }
-
-        .user-button {
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            color: var(--white);
-            padding: 0.6rem 1.2rem;
-            border-radius: 8px;
-            font-size: 0.9rem;
-            display: flex;
-            align-items: center;
-            gap: 0.8rem;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .user-button:hover {
-            background: rgba(255, 255, 255, 0.15);
-        }
-
-        .user-role {
-            color: #60a5fa;
-            font-weight: 600;
-        }
-
-        .user-avatar {
-            width: 35px;
-            height: 35px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 600;
-            font-size: 1rem;
-        }
-
-        /* ===== SIDEBAR (NOUVEAU AVEC LIENS FONCTIONNELS) ===== */
-        .sidebar {
-            position: fixed;
-            top: 70px;
-            left: 0;
-            width: 260px;
-            height: calc(100vh - 70px);
-            background: var(--primary);
-            border-right: 1px solid var(--secondary);
-            padding: 1.5rem 0;
-            overflow-y: auto;
-            z-index: 999;
-            transition: all 0.3s ease;
-        }
-
-        .nav-section {
-            padding: 0 1.2rem;
-            margin-bottom: 2rem;
-        }
-
-        .nav-title {
-            color: #94a3b8;
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 1rem;
-            font-weight: 600;
-            padding-left: 0.5rem;
-        }
-
+        
+        /* Topbar navigation GDF */
         .nav-item {
-            display: flex;
-            align-items: center;
-            gap: 0.8rem;
-            padding: 0.9rem 1rem;
-            color: #e2e8f0;
-            text-decoration: none;
-            border-radius: 8px;
-            margin-bottom: 0.4rem;
-            transition: all 0.2s ease;
-            font-size: 0.95rem;
-            border-left: 3px solid transparent;
-        }
-
-        .nav-item:hover {
-            background: rgba(255, 255, 255, 0.08);
-            color: var(--white);
-            border-left-color: var(--info);
-        }
-
-        .nav-item.active {
-            background: rgba(37, 99, 235, 0.15);
-            color: var(--white);
-            border-left-color: var(--info);
-            font-weight: 600;
-        }
-
-        .nav-item i {
-            width: 20px;
-            text-align: center;
-            font-size: 1.1rem;
-        }
-
-        .main-content {
-            margin-top: 70px;
-            margin-left: 260px;
-            padding: 2rem;
-            min-height: calc(100vh - 70px);
-            overflow: visible !important;
-        }
-
-        .dashboard-title {
-            margin-bottom: 2.5rem;
-        }
-
-        .dashboard-title h1 {
-            color: var(--primary-dark);
-            font-size: 1.8rem;
-            margin-bottom: 0.5rem;
-            font-weight: 700;
-        }
-
-        .dashboard-title p {
-            color: var(--text);
-            font-size: 1rem;
-            max-width: 800px;
-            line-height: 1.6;
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 3rem;
-        }
-
-        .stat-card {
-            background: var(--white);
-            border-radius: 12px;
-            padding: 1.8rem;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
-            border-top: 4px solid var(--primary);
-            transition: all 0.3s ease;
-        }
-
-        .stat-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-        }
-
-        .stat-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 1.2rem;
-        }
-
-        .stat-title {
-            color: var(--text);
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            font-weight: 600;
-        }
-
-        .stat-icon {
-            width: 50px;
-            height: 50px;
-            background: linear-gradient(135deg, var(--light) 0%, #e2e8f0 100%);
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--primary);
-            font-size: 1.4rem;
-        }
-
-        .stat-value {
-            font-size: 2.2rem;
-            font-weight: 800;
-            color: var(--primary-dark);
-            margin-bottom: 0.5rem;
-        }
-
-        .stat-subvalue {
-            font-size: 1rem;
-            color: var(--text);
-            margin-bottom: 1rem;
-        }
-
-        .stat-trend {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-size: 0.9rem;
+            padding: 1rem 1.25rem;
+            color: white;
             font-weight: 500;
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s;
         }
-
-        .trend-up {
-            color: var(--success);
+        
+        .nav-item:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-bottom-color: #FCD116;
         }
-
-        .trend-down {
-            color: var(--danger);
-        }
-
-        .trend-neutral {
-            color: var(--accent);
-        }
-
-        .footer {
-            margin-top: 3rem;
-            padding-top: 1.5rem;
-            border-top: 1px solid var(--border);
-            color: var(--text);
-            font-size: 0.9rem;
-            text-align: center;
-        }
-
-        .menu-toggle {
-            display: none;
-            background: none;
-            border: none;
-            color: var(--white);
-            font-size: 1.5rem;
-            cursor: pointer;
-            padding: 0.5rem;
-        }
-
-        @media (max-width: 992px) {
-            .menu-toggle {
-                display: block;
-            }
-            .sidebar {
-                transform: translateX(-100%);
-                width: 280px;
-            }
-            .sidebar.active {
-                transform: translateX(0);
-            }
-            .main-content {
-                margin-left: 0;
-            }
-        }
-
-        @media (max-width: 768px) {
-            .main-content {
-                padding: 1.5rem;
-            }
-            .stats-grid {
-                grid-template-columns: 1fr;
-            }
+        
+        .nav-item.active {
+            background-color: rgba(255, 255, 255, 0.15);
+            border-bottom-color: #FCD116;
         }
     </style>
 </head>
-<body>
-    <!-- ===== HEADER ===== -->
-    <header class="main-header">
-        <div class="logo-container">
-            <button class="menu-toggle" id="menuToggle">
-                <i class="fas fa-bars"></i>
-            </button>
-            <div class="logo">GDF</div>
+<body class="bg-gray-50 text-gray-800 min-h-screen">
+    <!-- Header Institutionnel DGI -->
+    <header class="bg-white">
+        <!-- Barre blanche avec logo, titre et sceau -->
+        <div class="py-3 border-b border-gray-200">
+            <div class="container mx-auto px-6">
+                <div class="flex items-center justify-between">
+                    <!-- LOGO DGI À GAUCHE -->
+                    <div class="w-24 h-16 flex items-center">
+                        <!-- REMPLACEZ CE DIV PAR VOTRE IMAGE DGI -->
+                        <div class="w-full h-full bg-gray-100 border border-gray-300 flex items-center justify-center text-gray-500 text-xs">
+                            [LOGO DGI]
+                            <!-- <img src="{{ asset('images/logo DGI.jpg') }}" alt="DGI" class="h-12"> -->
+                        </div>
+                    </div>
+                    
+                    <!-- Titre centré -->
+                    <div class="text-center flex-1 mx-8">
+                        <h1 class="text-sm font-bold text-gray-900 leading-tight">
+                            Ministère De L'Économie, Des Finances, De La Dette<br>
+                            Et Des Participations, Chargé De La Lutte Contre La Vie Chère
+                        </h1>
+                        <h2 class="text-base font-bold text-blue-800 mt-1">
+                            Direction Générale des Impôts
+                        </h2>
+                        <p class="text-xs text-gray-600 mt-1">L'impôt au cœur du développement</p>
+                    </div>
+                    
+                    <!-- SCEAU RÉPUBLIQUE À DROITE -->
+                    <div class="w-24 h-16 flex items-center">
+                        <!-- REMPLACEZ CE DIV PAR VOTRE IMAGE SCEAU -->
+                        <div class="w-full h-full bg-gray-100 border border-gray-300 flex items-center justify-center text-gray-500 text-xs">
+                            [SCEAU RG]
+                            <!-- <img src="{{ asset('images/sceau-Gabon.jpg') }}" alt="République du Gabon" class="h-12"> -->
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-
-        <!-- ===== BOUTON SUPER ADMIN ===== -->
-        <div class="user-menu-container">
-            <button class="user-button" id="userMenuButton">
-                <div class="user-avatar">SA</div>
-                <span class="user-role">Super Admin</span>
-                <i class="fas fa-chevron-down"></i>
-            </button>
-        </div>
+        
+        <!-- Barre drapeau Gabon -->
+        <div class="flag-bar"></div>
+        
+        <!-- Topbar Navigation GDF -->
+        <nav class="bg-topbar-blue">
+            <div class="container mx-auto px-6">
+                <div class="flex items-center justify-between">
+                    <!-- Logo GDF + Navigation -->
+                    <div class="flex items-center">
+                        <!-- LOGO GDF À GAUCHE -->
+                        <div class="mr-6 w-12 h-12 flex items-center">
+                            <!-- REMPLACEZ CE DIV PAR VOTRE LOGO GDF -->
+                            <div class="w-full h-full bg-white/20 border border-white/30 rounded flex items-center justify-center text-white text-xs">
+                                [GDF]
+                                <!-- <img src="{{ asset('images/logo GDF.jpg') }}" alt="GDF" class="h-8"> -->
+                            </div>
+                        </div>
+                        
+                        <!-- Navigation -->
+                        <div class="flex items-center">
+                            <a href="#" class="nav-item active">Tableau de bord</a>
+                            <a href="#" class="nav-item">Parapheurs</a>
+                            <a href="#" class="nav-item">Statistiques</a>
+                            <a href="#" class="nav-item">Administration</a>
+                        </div>
+                    </div>
+                    
+                    <!-- Actions & User -->
+                    <div class="flex items-center space-x-4">
+                        <!-- Recherche -->
+                        <div class="relative">
+                            <input type="text" placeholder="Taper ici pour rechercher" 
+                                   class="bg-white/10 text-white placeholder-white/70 px-4 py-2 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-white w-48">
+                        </div>
+                        
+                        <!-- Bouton Nouveau -->
+                        <button class="bg-white text-topbar-blue px-4 py-2 rounded-lg font-medium hover:bg-gray-100">
+                            Nouveau parapheur
+                        </button>
+                        
+                        <!-- Superadmin -->
+                        <div class="relative" x-data="{ open: false }">
+                            <button @click="open = !open" 
+                                    class="flex items-center space-x-2 text-white hover:bg-white/10 px-3 py-2 rounded-lg">
+                                <div class="text-right">
+                                    <p class="text-sm font-medium">Superadmin</p>
+                                    <p class="text-xs text-blue-200">Système GDF</p>
+                                </div>
+                                <div class="w-8 h-8 bg-white text-topbar-blue rounded-full flex items-center justify-center font-bold">
+                                    SA
+                                </div>
+                            </button>
+                            <div x-show="open" @click.away="open = false" 
+                                 class="absolute right-0 mt-2 bg-white rounded-lg shadow-lg border py-2 min-w-48 z-50">
+                                <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Profil</a>
+                                <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Paramètres</a>
+                                <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Mode sombre/clair</a>
+                                <hr class="my-2">
+                                <a href="#" class="block px-4 py-2 text-sm text-red-600 hover:bg-red-50">Déconnexion</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </nav>
     </header>
 
-    <!-- ===== SIDEBAR (AVEC LIENS FONCTIONNELS) ===== -->
-    <nav class="sidebar" id="sidebar">
-        <!-- SECTION 1 : NAVIGATION PRINCIPALE -->
-        <div class="nav-section">
-            <div class="nav-title">Navigation</div>
-            <a href="{{ route('dashboard.superadmin') }}" class="nav-item active">
-                <i class="fas fa-tachometer-alt"></i>
-                <span>Tableau de bord</span>
-            </a>
-            <a href="{{ route('parapheurs.index') }}" class="nav-item">
-                <i class="fas fa-file-signature"></i>
-                <span>Parapheurs</span>
-            </a>
-            <a href="{{ route('statistiques.index') }}" class="nav-item">
-                <i class="fas fa-chart-bar"></i>
-                <span>Statistiques</span>
-            </a>
-        </div>
-
-        <!-- SECTION 2 : ADMINISTRATION -->
-        <div class="nav-section">
-            <div class="nav-title">Administration</div>
-            <a href="{{ route('admin.utilisateurs') }}" class="nav-item">
-                <i class="fas fa-users"></i>
-                <span>Utilisateurs</span>
-            </a>
-            <a href="{{ route('admin.roles') }}" class="nav-item">
-                <i class="fas fa-user-tag"></i>
-                <span>Rôles & Permissions</span>
-            </a>
-            <a href="{{ route('admin.parametres') }}" class="nav-item">
-                <i class="fas fa-cog"></i>
-                <span>Paramètres système</span>
-            </a>
-            <a href="{{ route('admin.audit') }}" class="nav-item">
-                <i class="fas fa-history"></i>
-                <span>Journal d'audit</span>
-            </a>
-        </div>
-
-        <!-- SECTION 3 : ACTIONS RAPIDES -->
-        <div class="nav-section">
-            <div class="nav-title">Actions rapides</div>
-            <a href="{{ route('parapheurs.create') }}" class="nav-item">
-                <i class="fas fa-plus-circle"></i>
-                <span>Nouveau parapheur</span>
-            </a>
-            <a href="/rapports/export" class="nav-item">
-                <i class="fas fa-download"></i>
-                <span>Exporter les données</span>
-            </a>
-        </div>
-    </nav>
-
-    <!-- ===== CONTENU PRINCIPAL (DASHBOARD) ===== -->
-    <main class="main-content">
-        <div class="dashboard-title">
-            <h1>Tableau de bord Super Admin</h1>
-            <p>Supervision complète du système de gestion des parapheurs DRS</p>
-        </div>
-
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-header">
-                    <div class="stat-title">Parapheurs en attente</div>
-                    <div class="stat-icon">
-                        <i class="fas fa-clock"></i>
-                    </div>
+    <!-- Contenu principal -->
+    <main class="container mx-auto px-6 py-8">
+        <!-- Titre Dashboard -->
+        <div class="mb-8">
+            <h1 class="text-2xl font-bold text-gray-900">Tableau de bord GDF Parapheur</h1>
+            <p class="text-gray-600 mt-1">Supervision complète du système de gestion électronique des parapheurs</p>
+            
+            <!-- Indicateurs rapides -->
+            <div class="mt-4 flex flex-wrap gap-3">
+                <div class="flex items-center text-sm text-green-700 bg-green-50 px-3 py-1.5 rounded-lg">
+                    <div class="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                    Système opérationnel
                 </div>
-                <div class="stat-value">18</div>
-                <div class="stat-subvalue">dont 3 en retard</div>
-                <div class="stat-trend trend-up">
-                    <i class="fas fa-arrow-up"></i>
-                    <span>+2 depuis hier</span>
+                <div class="flex items-center text-sm text-blue-700 bg-blue-50 px-3 py-1.5 rounded-lg">
+                    <div class="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
+                    24 utilisateurs connectés
                 </div>
-            </div>
-
-            <div class="stat-card">
-                <div class="stat-header">
-                    <div class="stat-title">Parapheurs validés</div>
-                    <div class="stat-icon">
-                        <i class="fas fa-check-circle"></i>
-                    </div>
-                </div>
-                <div class="stat-value">47</div>
-                <div class="stat-subvalue">ce mois</div>
-                <div class="stat-trend trend-up">
-                    <i class="fas fa-arrow-up"></i>
-                    <span>+8% vs mois dernier</span>
-                </div>
-            </div>
-
-            <div class="stat-card">
-                <div class="stat-header">
-                    <div class="stat-title">Utilisateurs actifs</div>
-                    <div class="stat-icon">
-                        <i class="fas fa-users"></i>
-                    </div>
-                </div>
-                <div class="stat-value">24</div>
-                <div class="stat-subvalue">sur 6 rôles</div>
-                <div class="stat-trend trend-neutral">
-                    <i class="fas fa-minus"></i>
-                    <span>stable cette semaine</span>
-                </div>
-            </div>
-
-            <div class="stat-card">
-                <div class="stat-header">
-                    <div class="stat-title">Délai moyen</div>
-                    <div class="stat-icon">
-                        <i class="fas fa-hourglass-half"></i>
-                    </div>
-                </div>
-                <div class="stat-value">2,8</div>
-                <div class="stat-subvalue">jours</div>
-                <div class="stat-trend trend-down">
-                    <i class="fas fa-arrow-down"></i>
-                    <span>-0,3 jour</span>
+                <div class="flex items-center text-sm text-yellow-700 bg-yellow-50 px-3 py-1.5 rounded-lg">
+                    <div class="w-2 h-2 bg-yellow-500 rounded-full mr-2"></div>
+                    3 alertes en attente
                 </div>
             </div>
         </div>
 
-        <div class="footer">
-            <p>Système de Gestion des Parapheurs DRS © 2025</p>
-            <div style="display: flex; justify-content: center; gap: 1.5rem; margin-top: 0.8rem; color: var(--accent); font-size: 0.85rem;">
-                <span>Version 2.1.4</span>
-                <span>•</span>
-                <span>11 Décembre 2025</span>
+        <!-- Stats Cards Essentielles -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <!-- Parapheurs en attente -->
+            <div class="bg-white rounded-lg shadow-sm border p-6">
+                <p class="text-sm text-gray-500 mb-1">PARAPHEURS EN ATTENTE</p>
+                <div class="flex items-baseline">
+                    <span class="text-3xl font-bold text-gray-900">18</span>
+                    <span class="ml-2 text-sm text-red-600">dont 3 en retard</span>
+                </div>
+                <p class="text-xs text-green-600 mt-2">+2 depuis hier</p>
+            </div>
+
+            <!-- Parapheurs validés -->
+            <div class="bg-white rounded-lg shadow-sm border p-6">
+                <p class="text-sm text-gray-500 mb-1">PARAPHEURS VALIDÉS</p>
+                <div class="flex items-baseline">
+                    <span class="text-3xl font-bold text-gray-900">47</span>
+                    <span class="ml-2 text-sm text-gray-500">ce mois</span>
+                </div>
+                <p class="text-xs text-green-600 mt-2">+8% vs mois dernier</p>
+            </div>
+
+            <!-- Utilisateurs actifs -->
+            <div class="bg-white rounded-lg shadow-sm border p-6">
+                <p class="text-sm text-gray-500 mb-1">UTILISATEURS ACTIFS</p>
+                <div class="flex items-baseline">
+                    <span class="text-3xl font-bold text-gray-900">24</span>
+                    <span class="ml-2 text-sm text-gray-500">sur 6 rôles</span>
+                </div>
+                <p class="text-xs text-gray-500 mt-2">stable cette semaine</p>
+            </div>
+
+            <!-- Délai moyen -->
+            <div class="bg-white rounded-lg shadow-sm border p-6">
+                <p class="text-sm text-gray-500 mb-1">DÉLAI MOYEN</p>
+                <div class="flex items-baseline">
+                    <span class="text-3xl font-bold text-gray-900">2,8</span>
+                    <span class="ml-2 text-sm text-gray-500">jours</span>
+                </div>
+                <p class="text-xs text-green-600 mt-2">-0,3 jour</p>
+            </div>
+        </div>
+
+        <!-- Section informations essentielles -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Prochaines échéances -->
+            <div class="bg-white rounded-lg shadow-sm border p-6">
+                <h3 class="font-semibold text-gray-900 mb-4">Prochaines échéances</h3>
+                <div class="space-y-3">
+                    <div>
+                        <p class="font-medium text-gray-900">Rapport mensuel d'activité</p>
+                        <p class="text-sm text-gray-600">Rapport de performance du système</p>
+                        <p class="text-xs text-blue-600 mt-1">Dans 3 jours</p>
+                    </div>
+                    <div>
+                        <p class="font-medium text-gray-900">Audit de sécurité</p>
+                        <p class="text-sm text-gray-600">Audit semestriel du système</p>
+                        <p class="text-xs text-blue-600 mt-1">15/04/2024</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Performances système -->
+            <div class="bg-white rounded-lg shadow-sm border p-6">
+                <h3 class="font-semibold text-gray-900 mb-4">Performances système</h3>
+                <div class="space-y-4">
+                    <div>
+                        <div class="flex justify-between mb-1">
+                            <span class="text-sm text-gray-600">Temps de réponse</span>
+                            <span class="font-bold text-green-600">98,7%</span>
+                        </div>
+                        <p class="text-xs text-gray-500">Objectif : 95%</p>
+                    </div>
+                    <div>
+                        <div class="flex justify-between mb-1">
+                            <span class="text-sm text-gray-600">Disponibilité</span>
+                            <span class="font-bold text-green-600">99,9%</span>
+                        </div>
+                        <p class="text-xs text-gray-500">Objectif : 99,5%</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Support technique -->
+            <div class="bg-white rounded-lg shadow-sm border p-6">
+                <h3 class="font-semibold text-gray-900 mb-4">Support technique</h3>
+                <p class="text-sm text-gray-600 mb-4">Pour toute assistance technique :</p>
+                <div class="space-y-2">
+                    <p class="text-blue-600 font-medium">support-drs@dgi.gov.ga</p>
+                    <p class="text-blue-600 font-medium">+241 01 44 08 08</p>
+                </div>
             </div>
         </div>
     </main>
 
-    <script>
-        // Menu mobile
-        document.getElementById('menuToggle').addEventListener('click', function() {
-            document.getElementById('sidebar').classList.toggle('active');
-        });
+    <!-- Footer simple -->
+    <footer class="mt-10 border-t border-gray-200 py-4">
+        <div class="container mx-auto px-6 text-center">
+            <p class="text-sm text-gray-600">
+                © 2024 Direction Générale des Impôts - République du Gabon • Système GDF v2.1.0
+            </p>
+        </div>
+    </footer>
 
-        // Navigation active
-        document.querySelectorAll('.nav-item').forEach(item => {
-            item.addEventListener('click', function(e) {
-                document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-                this.classList.add('active');
+    <script>
+        function dashboardApp() {
+            return {
+                darkMode: false,
                 
-                if (window.innerWidth <= 992) {
-                    document.getElementById('sidebar').classList.remove('active');
+                toggleDarkMode() {
+                    this.darkMode = !this.darkMode;
+                    if (this.darkMode) {
+                        document.documentElement.classList.add('dark');
+                    } else {
+                        document.documentElement.classList.remove('dark');
+                    }
                 }
-            });
-        });
+            }
+        }
     </script>
 </body>
 </html>

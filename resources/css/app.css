@@ -1,11 +1,32 @@
 @import 'tailwindcss';
 
-@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
-@source '../../storage/framework/views/*.php';
-@source '../**/*.blade.php';
-@source '../**/*.js';
-
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
+    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Segoe UI Symbol', 'Noto Color Emoji';
+    
+    /* Couleurs de votre sidebar */
+    --color-sidebar: #111827; /* gray-900 */
+    --color-sidebar-hover: rgba(255, 255, 255, 0.05);
+    --color-sidebar-active: rgba(255, 255, 255, 0.1);
+}
+
+/* Styles personnalisés */
+[x-cloak] { 
+    display: none !important; 
+}
+
+.sidebar-icon {
+    transition: all 0.2s ease;
+}
+
+.menu-item-hover:hover {
+    background-color: var(--color-sidebar-hover);
+}
+
+.menu-item-active {
+    background-color: var(--color-sidebar-active);
+    border-left: 3px solid #3B82F6;
+}
+
+.menu-item-active .sidebar-icon {
+    color: #3B82F6;
 }

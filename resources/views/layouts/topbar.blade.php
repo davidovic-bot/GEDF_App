@@ -8,7 +8,8 @@
                 <span class="text-white font-bold text-sm">GDF</span>
             </div>
             <h1 class="text-lg md:text-xl font-semibold text-gray-800 dark:text-white hidden md:block">
-                Gestion des Données Foncières
+                Gestion des Dépenses Fiscales
+                
             </h1>
         </div>
         
