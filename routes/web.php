@@ -60,3 +60,25 @@ Route::middleware(['auth', 'ischefservice'])->get('/dashboard/chef-service', fun
 Route::middleware(['auth', 'isdirecteur'])->get('/dashboard/directeur', function () {
     return view('dashboards.directeur');
 })->name('dashboard.directeur');
+
+// ===== MODULES POUR SUPER ADMIN =====
+
+// Module Parapheurs (accessible seulement à Super Admin)
+Route::middleware(['auth', 'issuperadmin'])->prefix('parapheurs')->group(function () {
+    Route::get('/', [ParapheurController::class, 'index'])->name('parapheurs.index');
+    Route::get('/create', [ParapheurController::class, 'create'])->name('parapheurs.create');
+    // ... autres routes
+});
+
+// Module Statistiques (accessible à Super Admin)
+Route::middleware(['auth', 'issuperadmin'])->prefix('statistiques')->group(function () {
+    Route::get('/', [StatistiqueController::class, 'index'])->name('statistiques.index');
+});
+
+// Module Administration (accessible à Super Admin)
+Route::middleware(['auth', 'issuperadmin'])->prefix('administration')->group(function () {
+    Route::get('/utilisateurs', [AdminController::class, 'index'])->name('admin.utilisateurs');
+    Route::get('/roles', [AdminController::class, 'roles'])->name('admin.roles');
+    Route::get('/parametres', [AdminController::class, 'parametres'])->name('admin.parametres');
+    Route::get('/audit', [AdminController::class, 'audit'])->name('admin.audit');
+});
