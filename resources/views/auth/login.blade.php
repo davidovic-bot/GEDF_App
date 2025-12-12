@@ -215,7 +215,7 @@
     <!-- Partie gauche -->
     <div class="left-side">
         <div style="text-align: center; margin-bottom: 10px;">
-    <img src="{{ asset('images/logo_drs.png') }}" alt="Logo DRS" style="width: 500px; margin: 0 auto 5px; display: block;">
+    <img src="{{ asset('images/logo GDF.png') }}" alt="Logo GDF" style="width: 350px; margin: 0 auto 5px; display: block;">
 </div>
         <p class="slogan">GESTION DES DEPENSES FISCALES</p>
         <div class="loading-bar">
@@ -235,7 +235,7 @@
     <!-- Partie droite -->
     <div class="right-side">
         <div class="login-container">
-            <img src="{{ asset('images/dgi_logo.jpg') }}" alt="Logo DGI" class="logo-dgi">
+            <img src="{{ asset('images/logo DGI.jpg') }}" alt="Logo DGI" style="width: 300px" class="logo DGI">
             <h2 class="titre-login">Connectez-vous sur votre espace</h2>
 
         <form method="POST" action="{{ route('login') }}">

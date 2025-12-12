@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GDF - Tableau de bord DRS Parapheur</title>
+    <title>GDF - Tableau de bord GDF </title>
     
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -19,9 +19,9 @@
                 extend: {
                     colors: {
                         // Topbar bleu GDF (différent du bleu drapeau)
-                        'topbar-blue': '#1D4ED8',
+                        'topbar-blue': '#042683ea',
                         // Couleurs drapeau Gabon
-                        'flag-green': '#009E60',
+                        'flag-green': '#046604ff',
                         'flag-yellow': '#FCD116',
                         'flag-blue': '#3B82F6', // Bleu drapeau (différent)
                     }
@@ -71,14 +71,10 @@
             <div class="container mx-auto px-6">
                 <div class="flex items-center justify-between">
                     <!-- LOGO DGI À GAUCHE -->
-                    <div class="w-24 h-16 flex items-center">
-                        <!-- REMPLACEZ CE DIV PAR VOTRE IMAGE DGI -->
-                        <div class="w-full h-full bg-gray-100 border border-gray-300 flex items-center justify-center text-gray-500 text-xs">
-                            [LOGO DGI]
-                            <!-- <img src="{{ asset('images/logo DGI.jpg') }}" alt="DGI" class="h-12"> -->
-                        </div>
-                    </div>
-                    
+<div class="w-24 h-16 flex items-center">
+    <img src="{{ asset('images/logo DGI.jpg') }}" alt="DGI" class="h-full w-auto object-contain">
+</div>
+    
                     <!-- Titre centré -->
                     <div class="text-center flex-1 mx-8">
                         <h1 class="text-sm font-bold text-gray-900 leading-tight">
@@ -93,10 +89,7 @@
                     
                     <!-- SCEAU RÉPUBLIQUE À DROITE -->
                     <div class="w-24 h-16 flex items-center">
-                        <!-- REMPLACEZ CE DIV PAR VOTRE IMAGE SCEAU -->
-                        <div class="w-full h-full bg-gray-100 border border-gray-300 flex items-center justify-center text-gray-500 text-xs">
-                            [SCEAU RG]
-                            <!-- <img src="{{ asset('images/sceau-Gabon.jpg') }}" alt="République du Gabon" class="h-12"> -->
+                            <img src="{{ asset('images/sceau-gabon.jpg') }}" alt="République du Gabon" class="h-full w-auto object-contain"> 
                         </div>
                     </div>
                 </div>
@@ -114,10 +107,8 @@
                     <div class="flex items-center">
                         <!-- LOGO GDF À GAUCHE -->
                         <div class="mr-6 w-12 h-12 flex items-center">
-                            <!-- REMPLACEZ CE DIV PAR VOTRE LOGO GDF -->
-                            <div class="w-full h-full bg-white/20 border border-white/30 rounded flex items-center justify-center text-white text-xs">
-                                [GDF]
-                                <!-- <img src="{{ asset('images/logo GDF.jpg') }}" alt="GDF" class="h-8"> -->
+                            <div class="w-full h-full bg-white/20 border border-white/ 30 rounded flex items-center">         
+                                <img src="{{ asset('images/logo GDF.png') }}" alt="GDF" class="magic">
                             </div>
                         </div>
                         
@@ -132,17 +123,6 @@
                     
                     <!-- Actions & User -->
                     <div class="flex items-center space-x-4">
-                        <!-- Recherche -->
-                        <div class="relative">
-                            <input type="text" placeholder="Taper ici pour rechercher" 
-                                   class="bg-white/10 text-white placeholder-white/70 px-4 py-2 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-white w-48">
-                        </div>
-                        
-                        <!-- Bouton Nouveau -->
-                        <button class="bg-white text-topbar-blue px-4 py-2 rounded-lg font-medium hover:bg-gray-100">
-                            Nouveau parapheur
-                        </button>
-                        
                         <!-- Superadmin -->
                         <div class="relative" x-data="{ open: false }">
                             <button @click="open = !open" 
@@ -174,7 +154,7 @@
     <main class="container mx-auto px-6 py-8">
         <!-- Titre Dashboard -->
         <div class="mb-8">
-            <h1 class="text-2xl font-bold text-gray-900">Tableau de bord GDF Parapheur</h1>
+            <h1 class="text-2xl font-bold text-gray-900">Tableau de bord GDF</h1>
             <p class="text-gray-600 mt-1">Supervision complète du système de gestion électronique des parapheurs</p>
             
             <!-- Indicateurs rapides -->
@@ -185,7 +165,7 @@
                 </div>
                 <div class="flex items-center text-sm text-blue-700 bg-blue-50 px-3 py-1.5 rounded-lg">
                     <div class="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
-                    24 utilisateurs connectés
+                    10 utilisateurs connectés
                 </div>
                 <div class="flex items-center text-sm text-yellow-700 bg-yellow-50 px-3 py-1.5 rounded-lg">
                     <div class="w-2 h-2 bg-yellow-500 rounded-full mr-2"></div>
@@ -220,7 +200,7 @@
             <div class="bg-white rounded-lg shadow-sm border p-6">
                 <p class="text-sm text-gray-500 mb-1">UTILISATEURS ACTIFS</p>
                 <div class="flex items-baseline">
-                    <span class="text-3xl font-bold text-gray-900">24</span>
+                    <span class="text-3xl font-bold text-gray-900">10</span>
                     <span class="ml-2 text-sm text-gray-500">sur 6 rôles</span>
                 </div>
                 <p class="text-xs text-gray-500 mt-2">stable cette semaine</p>
