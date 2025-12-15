@@ -1,13 +1,10 @@
 <?php
 
-
-
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\ParapheurController;
 use App\Http\Controllers\StatistiqueController;
 use App\Http\Controllers\AdminController;
-
 
 /*
 |--------------------------------------------------------------------------
@@ -18,7 +15,7 @@ use App\Http\Controllers\AdminController;
 |
 */
 
-// Page d'accueil par défaut (optionnelle)
+// Page d'accueil redirige vers le login
 Route::get('/', function () {
     return view('auth.login');
 });
@@ -26,15 +23,10 @@ Route::get('/', function () {
 // Routes d'authentification Breeze
 require __DIR__.'/auth.php';
 
-
 /*
 |--------------------------------------------------------------------------
 | DASHBOARDS SELON LES RÔLES
 |--------------------------------------------------------------------------
-|
-| Chaque rôle accède à son propre dashboard.
-| Protection effectuée grâce aux middlewares personnalisés.
-|
 */
 
 // SUPERADMIN
@@ -67,21 +59,46 @@ Route::middleware(['auth', 'isdirecteur'])->get('/dashboard/directeur', function
     return view('dashboards.directeur');
 })->name('dashboard.directeur');
 
-// ===== MODULES POUR SUPER ADMIN =====
+// =============================================================================
+// MODULE PARAPHEURS - ACCESSIBLE SELON LES RÔLES
+// =============================================================================
 
-// Module Parapheurs (accessible seulement à Super Admin)
-Route::middleware(['auth', 'issuperadmin'])->prefix('parapheurs')->group(function () {
-    Route::get('/', [ParapheurController::class, 'index'])->name('parapheurs.index');
-    Route::get('/create', [ParapheurController::class, 'create'])->name('parapheurs.create');
-    // ... autres routes
+Route::middleware(['auth'])->prefix('parapheurs')->name('parapheurs.')->group(function () {
+    // Routes principales (la sécurité se fait dans le contrôleur)
+    Route::get('/', [ParapheurController::class, 'index'])->name('index');
+    Route::get('/create', [ParapheurController::class, 'create'])->name('create');
+    Route::post('/', [ParapheurController::class, 'store'])->name('store');
+    Route::get('/{parapheur}', [ParapheurController::class, 'show'])->name('show');
+    Route::get('/{parapheur}/edit', [ParapheurController::class, 'edit'])->name('edit');
+    Route::put('/{parapheur}', [ParapheurController::class, 'update'])->name('update');
+    Route::delete('/{parapheur}', [ParapheurController::class, 'destroy'])->name('destroy');
+    
+    // Actions workflow
+    Route::post('/{parapheur}/valider', [ParapheurController::class, 'valider'])->name('valider');
+    Route::post('/{parapheur}/rejeter', [ParapheurController::class, 'rejeter'])->name('rejeter');
+    Route::post('/{parapheur}/transmettre', [ParapheurController::class, 'transmettre'])->name('transmettre');
+    Route::post('/{parapheur}/fichiers', [ParapheurController::class, 'joindreFichier'])->name('fichiers.store');
+    
+    // Actions spécifiques superadmin
+    Route::middleware(['issuperadmin'])->group(function () {
+        Route::post('/{parapheur}/reassign', [ParapheurController::class, 'reassign'])->name('reassign');
+        Route::post('/{parapheur}/forcer-etape', [ParapheurController::class, 'forcerEtape'])->name('forcer.etape');
+        Route::post('/{parapheur}/archiver', [ParapheurController::class, 'archiver'])->name('archiver');
+    });
 });
 
-// Module Statistiques (accessible à Super Admin)
+// =============================================================================
+// MODULE STATISTIQUES
+// =============================================================================
+
 Route::middleware(['auth', 'issuperadmin'])->prefix('statistiques')->group(function () {
     Route::get('/', [StatistiqueController::class, 'index'])->name('statistiques.index');
 });
 
-// Module Administration (accessible à Super Admin)
+// =============================================================================
+// MODULE ADMINISTRATION
+// =============================================================================
+
 Route::middleware(['auth', 'issuperadmin'])->prefix('administration')->group(function () {
     Route::get('/utilisateurs', [AdminController::class, 'index'])->name('admin.utilisateurs');
     Route::get('/roles', [AdminController::class, 'roles'])->name('admin.roles');
@@ -89,16 +106,32 @@ Route::middleware(['auth', 'issuperadmin'])->prefix('administration')->group(fun
     Route::get('/audit', [AdminController::class, 'audit'])->name('admin.audit');
 });
 
+// =============================================================================
+// DASHBOARD SUPERADMIN (alternative)
+// =============================================================================
+
 Route::get('/dashboard-superadmin', function () {
     return view('dashboard-superadmin');
 })->name('dashboard.superadmin');
 
-// Administration
+// =============================================================================
+// ADMINISTRATION AVEC RESSOURCES
+// =============================================================================
+
 Route::middleware(['auth', 'role:superadmin|admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', function () {
         return view('admin.dashboard');
     })->name('dashboard');
     
-    Route::resource('utilisateurs', Admin\UtilisateurController::class);
-    Route::resource('roles', Admin\RoleController::class);
+    // À décommenter quand tu auras ces contrôleurs
+    // Route::resource('utilisateurs', Admin\UtilisateurController::class);
+    // Route::resource('roles', Admin\RoleController::class);
+});
+
+// =============================================================================
+// ROUTE FALLBACK POUR LES ERREURS 404
+// =============================================================================
+
+Route::fallback(function () {
+    return redirect()->route('dashboard.superadmin');
 });
