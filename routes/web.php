@@ -93,3 +93,12 @@ Route::get('/dashboard-superadmin', function () {
     return view('dashboard-superadmin');
 })->name('dashboard.superadmin');
 
+// Administration
+Route::middleware(['auth', 'role:superadmin|admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/dashboard', function () {
+        return view('admin.dashboard');
+    })->name('dashboard');
+    
+    Route::resource('utilisateurs', Admin\UtilisateurController::class);
+    Route::resource('roles', Admin\RoleController::class);
+});

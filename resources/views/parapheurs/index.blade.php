@@ -1,896 +1,638 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GDF - Module Parapheurs</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        /* ===== PALETTE DE COULEURS ===== */
-        :root {
-            --primary-dark: #0f172a;
-            --primary: #1e293b;
-            --secondary: #334155;
-            --accent: #475569;
-            --success: #059669;
-            --warning: #d97706;
-            --danger: #dc2626;
-            --info: #2563eb;
-            --light: #f1f5f9;
-            --white: #ffffff;
-            --border: #cbd5e1;
-            --text-dark: #0f172a;
-            --text: #475569;
-        }
+@extends('layouts.app')
 
-        /* ===== RESET & BASE ===== */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', 'Inter', system-ui, sans-serif;
-        }
+@section('title', 'Supervision des Parapheurs')
 
-        body {
-            background-color: var(--light);
-            color: var(--text-dark);
-            min-height: 100vh;
-            overflow-x: hidden;
-        }
-
-        /* ===== HEADER ===== */
-        .main-header {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            background: var(--primary-dark);
-            color: var(--white);
-            padding: 0 2rem;
-            height: 70px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-            z-index: 1000;
-            border-bottom: 1px solid var(--secondary);
-        }
-
-        .logo-container {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        .logo {
-            width: 50px;
-            height: 50px;
-            background: linear-gradient(135deg, var(--success) 0%, var(--info) 100%);
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 800;
-            color: var(--white);
-            font-size: 1.5rem;
-            box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
-        }
-
-        /* ===== BOUTON SUPER ADMIN ===== */
-        .user-menu-container {
-            position: relative;
-        }
-
-        .user-button {
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            color: var(--white);
-            padding: 0.6rem 1.2rem;
-            border-radius: 8px;
-            font-size: 0.9rem;
-            display: flex;
-            align-items: center;
-            gap: 0.8rem;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .user-button:hover {
-            background: rgba(255, 255, 255, 0.15);
-        }
-
-        .user-role {
-            color: #60a5fa;
-            font-weight: 600;
-        }
-
-        .user-avatar {
-            width: 35px;
-            height: 35px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 600;
-            font-size: 1rem;
-        }
-
-        /* ===== SIDEBAR ===== */
-        .sidebar {
-            position: fixed;
-            top: 70px;
-            left: 0;
-            width: 260px;
-            height: calc(100vh - 70px);
-            background: var(--primary);
-            border-right: 1px solid var(--secondary);
-            padding: 1.5rem 0;
-            overflow-y: auto;
-            z-index: 999;
-        }
-
-        .nav-section {
-            padding: 0 1.2rem;
-            margin-bottom: 2rem;
-        }
-
-        .nav-title {
-            color: #94a3b8;
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 1rem;
-            font-weight: 600;
-            padding-left: 0.5rem;
-        }
-
-        .nav-item {
-            display: flex;
-            align-items: center;
-            gap: 0.8rem;
-            padding: 0.9rem 1rem;
-            color: #e2e8f0;
-            text-decoration: none;
-            border-radius: 8px;
-            margin-bottom: 0.4rem;
-            transition: all 0.2s ease;
-            font-size: 0.95rem;
-            border-left: 3px solid transparent;
-        }
-
-        .nav-item:hover {
-            background: rgba(255, 255, 255, 0.08);
-            color: var(--white);
-            border-left-color: var(--info);
-        }
-
-        .nav-item.active {
-            background: rgba(37, 99, 235, 0.15);
-            color: var(--white);
-            border-left-color: var(--info);
-            font-weight: 600;
-        }
-
-        /* ===== CONTENU PRINCIPAL ===== */
-        .main-content {
-            margin-top: 70px;
-            margin-left: 260px;
-            padding: 2rem;
-            min-height: calc(100vh - 70px);
-            overflow: visible !important;
-        }
-
-        /* ===== EN-TÊTE DU MODULE ===== */
-        .module-header {
-            margin-bottom: 2rem;
-            padding-bottom: 1.5rem;
-            border-bottom: 2px solid var(--border);
-        }
-
-        .module-header h1 {
-            color: var(--primary-dark);
-            font-size: 1.8rem;
-            margin-bottom: 0.5rem;
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        .module-header p {
-            color: var(--text);
-            font-size: 1rem;
-            max-width: 800px;
-        }
-
-        /* ===== BARRE D'OUTILS ===== */
-        .toolbar {
-            background: var(--white);
-            border-radius: 12px;
-            padding: 1.5rem;
-            margin-bottom: 2rem;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 1rem;
-        }
-
-        .search-box {
-            flex: 1;
-            min-width: 300px;
-            position: relative;
-        }
-
-        .search-box input {
-            width: 100%;
-            padding: 0.8rem 1rem 0.8rem 3rem;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            font-size: 0.95rem;
-            background: var(--light);
-        }
-
-        .search-box i {
-            position: absolute;
-            left: 1rem;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--accent);
-        }
-
-        .btn-primary {
-            background: var(--info);
-            color: var(--white);
-            border: none;
-            padding: 0.8rem 1.5rem;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            transition: all 0.2s ease;
-        }
-
-        .btn-primary:hover {
-            background: #1d4ed8;
-            transform: translateY(-2px);
-        }
-
-        /* ===== FILTRES ===== */
-        .filters {
-            display: flex;
-            gap: 0.5rem;
-            margin-bottom: 2rem;
-            flex-wrap: wrap;
-        }
-
-        .filter-btn {
-            padding: 0.7rem 1.5rem;
-            border: 1px solid var(--border);
-            background: var(--white);
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 500;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .filter-btn:hover {
-            background: var(--light);
-        }
-
-        .filter-btn.active {
-            background: var(--info);
-            color: var(--white);
-            border-color: var(--info);
-        }
-
-        .filter-badge {
-            background: rgba(255, 255, 255, 0.2);
-            padding: 0.2rem 0.6rem;
-            border-radius: 12px;
-            font-size: 0.8rem;
-        }
-
-        /* ===== TABLEAU DES PARAPHEURS ===== */
-        .data-table-container {
-            background: var(--white);
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-            margin-bottom: 2rem;
-        }
-
-        .table-header {
-            padding: 1.5rem;
-            background: var(--light);
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .table-header h3 {
-            color: var(--primary-dark);
-            font-size: 1.2rem;
-        }
-
-        .data-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        .data-table th {
-            padding: 1.2rem 1.5rem;
-            text-align: left;
-            color: var(--primary-dark);
-            font-weight: 600;
-            border-bottom: 2px solid var(--border);
-            background: var(--light);
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .data-table td {
-            padding: 1.2rem 1.5rem;
-            border-bottom: 1px solid var(--border);
-            color: var(--text);
-            font-size: 0.95rem;
-        }
-
-        .data-table tr:hover {
-            background: var(--light);
-        }
-
-        /* ===== BADGES DE STATUT ===== */
-        .status-badge {
-            padding: 0.4rem 0.8rem;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.3rem;
-        }
-
-        .status-attente {
-            background: rgba(217, 119, 6, 0.15);
-            color: var(--warning);
-        }
-
-        .status-cours {
-            background: rgba(37, 99, 235, 0.15);
-            color: var(--info);
-        }
-
-        .status-valide {
-            background: rgba(5, 150, 105, 0.15);
-            color: var(--success);
-        }
-
-        .status-rejete {
-            background: rgba(220, 38, 38, 0.15);
-            color: var(--danger);
-        }
-
-        .status-retard {
-            background: rgba(220, 38, 38, 0.1);
-            color: var(--danger);
-            border: 1px dashed var(--danger);
-        }
-
-        /* ===== BOUTONS D'ACTION ===== */
-        .action-buttons {
-            display: flex;
-            gap: 0.5rem;
-        }
-
-        .btn-action {
-            width: 32px;
-            height: 32px;
-            border-radius: 6px;
-            border: 1px solid var(--border);
-            background: var(--white);
-            color: var(--text);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s ease;
-        }
-
-        .btn-action:hover {
-            background: var(--light);
-            transform: translateY(-2px);
-        }
-
-        .btn-view:hover {
-            color: var(--info);
-            border-color: var(--info);
-        }
-
-        .btn-edit:hover {
-            color: var(--warning);
-            border-color: var(--warning);
-        }
-
-        .btn-delete:hover {
-            color: var(--danger);
-            border-color: var(--danger);
-        }
-
-        /* ===== PAGINATION ===== */
-        .pagination {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 0.5rem;
-            margin-top: 2rem;
-        }
-
-        .page-btn {
-            width: 40px;
-            height: 40px;
-            border: 1px solid var(--border);
-            background: var(--white);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .page-btn:hover {
-            background: var(--light);
-        }
-
-        .page-btn.active {
-            background: var(--info);
-            color: var(--white);
-            border-color: var(--info);
-        }
-
-        /* ===== STATISTIQUES RAPIDES ===== */
-        .quick-stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
-            margin-bottom: 2rem;
-        }
-
-        .stat-box {
-            background: var(--white);
-            border-radius: 12px;
-            padding: 1.5rem;
-            text-align: center;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-            border-top: 4px solid;
-        }
-
-        .stat-box h4 {
-            color: var(--text);
-            font-size: 0.9rem;
-            margin-bottom: 0.5rem;
-            font-weight: 600;
-        }
-
-        .stat-box .value {
-            font-size: 2rem;
-            font-weight: 800;
-            margin-bottom: 0.5rem;
-        }
-
-        /* ===== RESPONSIVE ===== */
-        @media (max-width: 992px) {
-            .sidebar {
-                transform: translateX(-100%);
-                width: 280px;
-            }
-            .sidebar.active {
-                transform: translateX(0);
-            }
-            .main-content {
-                margin-left: 0;
-            }
-            .toolbar {
-                flex-direction: column;
-                align-items: stretch;
-            }
-            .search-box {
-                min-width: 100%;
-            }
-        }
-
-        @media (max-width: 768px) {
-            .main-content {
-                padding: 1.5rem;
-            }
-            .data-table {
-                display: block;
-                overflow-x: auto;
-            }
-            .filters {
-                justify-content: center;
-            }
-        }
-    </style>
-</head>
-<body>
-    <!-- ===== HEADER ===== -->
-    <header class="main-header">
-        <div class="logo-container">
-            <button class="menu-toggle" id="menuToggle">
-                <i class="fas fa-bars"></i>
-            </button>
-            <div class="logo">GDF</div>
-        </div>
-
-        <!-- ===== BOUTON SUPER ADMIN ===== -->
-        <div class="user-menu-container">
-            <button class="user-button" id="userMenuButton">
-                <div class="user-avatar">SA</div>
-                <span class="user-role">Super Admin</span>
-                <i class="fas fa-chevron-down"></i>
-            </button>
-        </div>
-    </header>
-
-    <!-- ===== SIDEBAR ===== -->
-    <nav class="sidebar" id="sidebar">
-        <!-- SECTION 1 : NAVIGATION PRINCIPALE -->
-        <div class="nav-section">
-            <div class="nav-title">Navigation</div>
-            <a href="/dashboard" class="nav-item">
-                <i class="fas fa-tachometer-alt"></i>
-                <span>Tableau de bord</span>
+@section('content')
+<div class="container-fluid">
+    <!-- En-tête -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 text-gray-800">
+            <i class="fas fa-tachometer-alt text-primary"></i> Supervision Parapheurs
+            @if(auth()->user()->hasRole('superadmin'))
+            <span class="badge bg-danger ms-2">SUPERADMIN</span>
+            @endif
+        </h1>
+        <div>
+            @if(auth()->user()->hasRole('superadmin'))
+            <a href="{{ route('admin.dashboard') }}" class="btn btn-outline-danger me-2">
+                <i class="fas fa-cog"></i> Administration
             </a>
-            <a href="/parapheurs" class="nav-item active">
-                <i class="fas fa-file-signature"></i>
-                <span>Parapheurs</span>
-            </a>
-            <a href="/statistiques" class="nav-item">
-                <i class="fas fa-chart-bar"></i>
-                <span>Statistiques</span>
+            @endif
+            <a href="{{ route('parapheurs.create') }}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Nouveau Parapheur
             </a>
         </div>
+    </div>
 
-        <!-- SECTION 2 : ADMINISTRATION -->
-        <div class="nav-section">
-            <div class="nav-title">Administration</div>
-            <a href="/administration/utilisateurs" class="nav-item">
-                <i class="fas fa-users"></i>
-                <span>Utilisateurs</span>
-            </a>
-            <a href="/administration/roles" class="nav-item">
-                <i class="fas fa-user-tag"></i>
-                <span>Rôles & Permissions</span>
-            </a>
-            <a href="/administration/parametres" class="nav-item">
-                <i class="fas fa-cog"></i>
-                <span>Paramètres système</span>
-            </a>
-            <a href="/administration/audit" class="nav-item">
-                <i class="fas fa-history"></i>
-                <span>Journal d'audit</span>
-            </a>
-        </div>
-
-        <!-- SECTION 3 : ACTIONS RAPIDES -->
-        <div class="nav-section">
-            <div class="nav-title">Actions rapides</div>
-            <a href="/parapheurs/create" class="nav-item">
-                <i class="fas fa-plus-circle"></i>
-                <span>Nouveau parapheur</span>
-            </a>
-            <a href="/statistiques/export" class="nav-item">
-                <i class="fas fa-download"></i>
-                <span>Exporter les données</span>
-            </a>
-        </div>
-    </nav>
-
-    <!-- ===== CONTENU PRINCIPAL ===== -->
-    <main class="main-content">
-        <!-- En-tête du module -->
-        <div class="module-header">
-            <h1><i class="fas fa-file-signature"></i> Module Parapheurs</h1>
-            <p>Gestion complète des courriers et documents administratifs - Suivi, validation et archivage</p>
-        </div>
-
-        <!-- Statistiques rapides -->
-        <div class="quick-stats">
-            <div class="stat-box" style="border-top-color: var(--warning);">
-                <h4>En attente</h4>
-                <div class="value">18</div>
-                <div style="font-size: 0.8rem; color: var(--text);">dont 3 en retard</div>
-            </div>
-            <div class="stat-box" style="border-top-color: var(--info);">
-                <h4>En cours</h4>
-                <div class="value">12</div>
-                <div style="font-size: 0.8rem; color: var(--text);">en traitement</div>
-            </div>
-            <div class="stat-box" style="border-top-color: var(--success);">
-                <h4>Validés ce mois</h4>
-                <div class="value">47</div>
-                <div style="font-size: 0.8rem; color: var(--text);">+8% vs mois dernier</div>
-            </div>
-            <div class="stat-box" style="border-top-color: var(--danger);">
-                <h4>Rejetés</h4>
-                <div class="value">5</div>
-                <div style="font-size: 0.8rem; color: var(--text);">nécessitent correction</div>
-            </div>
-        </div>
-
-        <!-- Barre d'outils -->
-        <div class="toolbar">
-            <div class="search-box">
-                <i class="fas fa-search"></i>
-                <input type="text" placeholder="Rechercher un parapheur par référence, service ou objet...">
-            </div>
-            <button class="btn-primary" onclick="window.location.href='/parapheurs/create'">
-                <i class="fas fa-plus"></i>
-                Nouveau parapheur
-            </button>
-        </div>
-
-        <!-- Filtres -->
-        <div class="filters">
-            <button class="filter-btn active">
-                <i class="fas fa-clock"></i>
-                En attente
-                <span class="filter-badge">18</span>
-            </button>
-            <button class="filter-btn">
-                <i class="fas fa-spinner"></i>
-                En cours
-                <span class="filter-badge">12</span>
-            </button>
-            <button class="filter-btn">
-                <i class="fas fa-check-circle"></i>
-                Validés
-                <span class="filter-badge">47</span>
-            </button>
-            <button class="filter-btn">
-                <i class="fas fa-times-circle"></i>
-                Rejetés
-                <span class="filter-badge">5</span>
-            </button>
-            <button class="filter-btn">
-                <i class="fas fa-exclamation-triangle"></i>
-                En retard
-                <span class="filter-badge">3</span>
-            </button>
-            <button class="filter-btn">
-                <i class="fas fa-filter"></i>
-                Plus de filtres
-            </button>
-        </div>
-
-        <!-- Tableau des parapheurs -->
-        <div class="data-table-container">
-            <div class="table-header">
-                <h3>Liste des parapheurs</h3>
-                <div style="font-size: 0.9rem; color: var(--accent);">
-                    Affichage 1-10 sur 82 parapheurs
+    <!-- STATISTIQUES RAPIDES SUPERADMIN -->
+    @if(auth()->user()->hasRole('superadmin'))
+    <div class="row mb-4">
+        <div class="col-xl-2 col-md-4 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {{ App\Models\Parapheur::count() }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-file-contract fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
                 </div>
             </div>
-            
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>Référence</th>
-                        <th>Objet</th>
-                        <th>Service</th>
-                        <th>Créé le</th>
-                        <th>Étape</th>
-                        <th>Statut</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- Ligne 1 -->
-                    <tr>
-                        <td><strong>#DRS-2025-0421</strong></td>
-                        <td>Demande d'achat matériel informatique</td>
-                        <td>Service Finances</td>
-                        <td>11/12/2025</td>
-                        <td>Directeur</td>
-                        <td>
-                            <span class="status-badge status-attente">
-                                <i class="fas fa-clock"></i> En attente
-                            </span>
-                        </td>
-                        <td>
-                            <div class="action-buttons">
-                                <button class="btn-action btn-view" title="Voir">
-                                    <i class="fas fa-eye"></i>
-                                </button>
-                                <button class="btn-action btn-edit" title="Modifier">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button class="btn-action btn-delete" title="Supprimer">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-                    
-                    <!-- Ligne 2 -->
-                    <tr>
-                        <td><strong>#DRS-2025-0420</strong></td>
-                        <td>Rapport d'activité trimestriel</td>
-                        <td>Service Budget</td>
-                        <td>10/12/2025</td>
-                        <td>Chef de Service</td>
-                        <td>
-                            <span class="status-badge status-cours">
-                                <i class="fas fa-spinner"></i> En cours
-                            </span>
-                        </td>
-                        <td>
-                            <div class="action-buttons">
-                                <button class="btn-action btn-view" title="Voir">
-                                    <i class="fas fa-eye"></i>
-                                </button>
-                                <button class="btn-action btn-edit" title="Modifier">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-                    
-                    <!-- Ligne 3 -->
-                    <tr>
-                        <td><strong>#DRS-2025-0419</strong></td>
-                        <td>Demande de mission à l'étranger</td>
-                        <td>Service Fiscal</td>
-                        <td>09/12/2025</td>
-                        <td>Gestionnaire</td>
-                        <td>
-                            <span class="status-badge status-retard">
-                                <i class="fas fa-exclamation-triangle"></i> En retard
-                            </span>
-                        </td>
-                        <td>
-                            <div class="action-buttons">
-                                <button class="btn-action btn-view" title="Voir">
-                                    <i class="fas fa-eye"></i>
-                                </button>
-                                <button class="btn-action btn-edit" title="Relancer">
-                                    <i class="fas fa-bell"></i>
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-                    
-                    <!-- Ligne 4 -->
-                    <tr>
-                        <td><strong>#DRS-2025-0418</strong></td>
-                        <td>Contrat de prestation de service</td>
-                        <td>Service Audit</td>
-                        <td>08/12/2025</td>
-                        <td>Terminé</td>
-                        <td>
-                            <span class="status-badge status-valide">
-                                <i class="fas fa-check-circle"></i> Validé
-                            </span>
-                        </td>
-                        <td>
-                            <div class="action-buttons">
-                                <button class="btn-action btn-view" title="Voir">
-                                    <i class="fas fa-eye"></i>
-                                </button>
-                                <button class="btn-action btn-edit" title="Archiver">
-                                    <i class="fas fa-archive"></i>
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-                    
-                    <!-- Ligne 5 -->
-                    <tr>
-                        <td><strong>#DRS-2025-0417</strong></td>
-                        <td>Demande de congé exceptionnel</td>
-                        <td>Service RH</td>
-                        <td>07/12/2025</td>
-                        <td>Rejeté</td>
-                        <td>
-                            <span class="status-badge status-rejete">
-                                <i class="fas fa-times-circle"></i> Rejeté
-                            </span>
-                        </td>
-                        <td>
-                            <div class="action-buttons">
-                                <button class="btn-action btn-view" title="Voir">
-                                    <i class="fas fa-eye"></i>
-                                </button>
-                                <button class="btn-action btn-edit" title="Corriger">
-                                    <i class="fas fa-redo"></i>
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
         </div>
-
-        <!-- Pagination -->
-        <div class="pagination">
-            <button class="page-btn">
-                <i class="fas fa-chevron-left"></i>
-            </button>
-            <button class="page-btn active">1</button>
-            <button class="page-btn">2</button>
-            <button class="page-btn">3</button>
-            <button class="page-btn">4</button>
-            <button class="page-btn">5</button>
-            <button class="page-btn">
-                <i class="fas fa-chevron-right"></i>
-            </button>
-        </div>
-
-        <!-- Footer -->
-        <div style="margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border); color: var(--text); font-size: 0.9rem; text-align: center;">
-            <p>Système de Gestion des Parapheurs DRS © 2025 - Module Parapheurs</p>
-            <div style="display: flex; justify-content: center; gap: 1.5rem; margin-top: 0.8rem; color: var(--accent); font-size: 0.85rem;">
-                <span>Total parapheurs : 82</span>
-                <span>•</span>
-                <span>Dernière mise à jour : 11/12/2025 15:42</span>
+        
+        <div class="col-xl-2 col-md-4 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                En attente</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {{ App\Models\Parapheur::where('statut', 'en_attente')->count() }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-clock fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
-    </main>
+        
+        <div class="col-xl-2 col-md-4 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                En cours</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {{ App\Models\Parapheur::where('statut', 'en_cours')->count() }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-spinner fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-2 col-md-4 mb-4">
+            <div class="card border-left-danger shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
+                                En retard</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {{ App\Models\Parapheur::where('statut', 'en_retard')->count() }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-exclamation-triangle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-2 col-md-4 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Validés</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {{ App\Models\Parapheur::where('statut', 'valide')->count() }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-check-circle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-2 col-md-4 mb-4">
+            <div class="card border-left-secondary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-secondary text-uppercase mb-1">
+                                Archivés</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {{ App\Models\Parapheur::where('statut', 'archive')->count() }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-archive fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
 
-    <script>
-        // Menu mobile
-        document.getElementById('menuToggle').addEventListener('click', function() {
-            document.getElementById('sidebar').classList.toggle('active');
-        });
+    <!-- FILTRES AVANCÉS (Superadmin seulement) -->
+    @if(auth()->user()->hasRole('superadmin') && isset($services) && isset($directions) && isset($utilisateurs))
+    <div class="card shadow mb-4">
+        <div class="card-header bg-dark text-white">
+            <h6 class="m-0 font-weight-bold">
+                <i class="fas fa-filter"></i> Filtres avancés de supervision
+            </h6>
+        </div>
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <!-- Filtre Statut -->
+                <div class="col-md-2">
+                    <label class="form-label">Statut</label>
+                    <select name="statut" class="form-select">
+                        <option value="">Tous statuts</option>
+                        @foreach(['en_attente', 'en_cours', 'valide', 'rejete', 'en_retard', 'archive'] as $statut)
+                        <option value="{{ $statut }}" {{ request('statut') == $statut ? 'selected' : '' }}>
+                            {{ ucfirst(str_replace('_', ' ', $statut)) }}
+                        </option>
+                        @endforeach
+                    </select>
+                </div>
+                
+                <!-- Filtre Direction -->
+                <div class="col-md-2">
+                    <label class="form-label">Direction</label>
+                    <select name="direction_id" class="form-select">
+                        <option value="">Toutes</option>
+                        @foreach($directions as $direction)
+                        <option value="{{ $direction->id }}" {{ request('direction_id') == $direction->id ? 'selected' : '' }}>
+                            {{ $direction->sigle }}
+                        </option>
+                        @endforeach
+                    </select>
+                </div>
+                
+                <!-- Filtre Service -->
+                <div class="col-md-2">
+                    <label class="form-label">Service</label>
+                    <select name="service_id" class="form-select">
+                        <option value="">Tous</option>
+                        @foreach($services as $service)
+                        <option value="{{ $service->id }}" {{ request('service_id') == $service->id ? 'selected' : '' }}>
+                            {{ $service->code }}
+                        </option>
+                        @endforeach
+                    </select>
+                </div>
+                
+                <!-- Filtre Créateur -->
+                <div class="col-md-2">
+                    <label class="form-label">Créateur</label>
+                    <select name="createur_id" class="form-select">
+                        <option value="">Tous</option>
+                        @foreach($utilisateurs as $user)
+                        <option value="{{ $user->id }}" {{ request('createur_id') == $user->id ? 'selected' : '' }}>
+                            {{ $user->name }}
+                        </option>
+                        @endforeach
+                    </select>
+                </div>
+                
+                <!-- Filtre Responsable -->
+                <div class="col-md-2">
+                    <label class="form-label">Responsable</label>
+                    <select name="responsable_actuel_id" class="form-select">
+                        <option value="">Tous</option>
+                        @foreach($utilisateurs as $user)
+                        <option value="{{ $user->id }}" {{ request('responsable_actuel_id') == $user->id ? 'selected' : '' }}>
+                            {{ $user->name }}
+                        </option>
+                        @endforeach
+                    </select>
+                </div>
+                
+                <!-- Filtre Priorité -->
+                <div class="col-md-2">
+                    <label class="form-label">Priorité</label>
+                    <select name="priorite" class="form-select">
+                        <option value="">Toutes</option>
+                        @foreach(['basse', 'normale', 'haute', 'urgente'] as $priorite)
+                        <option value="{{ $priorite }}" {{ request('priorite') == $priorite ? 'selected' : '' }}>
+                            {{ ucfirst($priorite) }}
+                        </option>
+                        @endforeach
+                    </select>
+                </div>
+                
+                <!-- Dates -->
+                <div class="col-md-3">
+                    <label class="form-label">Date début</label>
+                    <input type="date" name="date_debut" class="form-control" 
+                           value="{{ request('date_debut') }}">
+                </div>
+                
+                <div class="col-md-3">
+                    <label class="form-label">Date fin</label>
+                    <input type="date" name="date_fin" class="form-control" 
+                           value="{{ request('date_fin') }}">
+                </div>
+                
+                <!-- Boutons -->
+                <div class="col-md-6 d-flex align-items-end">
+                    <button type="submit" class="btn btn-dark me-2">
+                        <i class="fas fa-search"></i> Filtrer
+                    </button>
+                    <a href="{{ route('parapheurs.index') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-times"></i> Réinitialiser
+                    </a>
+                    @if(auth()->user()->hasRole('superadmin'))
+                    <div class="ms-auto">
+                        <button type="button" class="btn btn-outline-primary dropdown-toggle" 
+                                data-bs-toggle="dropdown">
+                            <i class="fas fa-download"></i> Exporter
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#"><i class="fas fa-file-excel"></i> Excel</a></li>
+                            <li><a class="dropdown-item" href="#"><i class="fas fa-file-pdf"></i> PDF</a></li>
+                        </ul>
+                    </div>
+                    @endif
+                </div>
+            </form>
+        </div>
+    </div>
+    @else
+    <!-- Filtres basiques pour non-superadmin -->
+    <div class="card shadow mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Statut</label>
+                    <select name="statut" class="form-select">
+                        <option value="">Tous</option>
+                        <option value="en_attente" {{ request('statut') == 'en_attente' ? 'selected' : '' }}>En attente</option>
+                        <option value="en_cours" {{ request('statut') == 'en_cours' ? 'selected' : '' }}>En cours</option>
+                        <option value="valide" {{ request('statut') == 'valide' ? 'selected' : '' }}>Validé</option>
+                        <option value="rejete" {{ request('statut') == 'rejete' ? 'selected' : '' }}>Rejeté</option>
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary me-2">
+                        <i class="fas fa-filter"></i> Filtrer
+                    </button>
+                    <a href="{{ route('parapheurs.index') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-times"></i> Réinitialiser
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+    @endif
 
-        // Filtres
-        document.querySelectorAll('.filter-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-                this.classList.add('active');
-            });
-        });
+    <!-- TABLEAU DES PARAPHEURS -->
+    <div class="card shadow">
+        <div class="card-header bg-white">
+            <div class="d-flex justify-content-between align-items-center">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="fas fa-list"></i> Liste des parapheurs
+                    <span class="badge bg-primary ms-2">{{ $parapheurs->total() }}</span>
+                </h6>
+                <div>
+                    <span class="text-muted me-3">
+                        Page {{ $parapheurs->currentPage() }} / {{ $parapheurs->lastPage() }}
+                    </span>
+                </div>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-sm mb-0">
+                    <thead class="thead-light">
+                        <tr>
+                            <th style="width: 100px;">Réf.</th>
+                            <th>Objet</th>
+                            @if(auth()->user()->hasRole('superadmin'))
+                            <th style="width: 80px;">Direction</th>
+                            <th style="width: 80px;">Service</th>
+                            <th style="width: 120px;">Créateur</th>
+                            <th style="width: 120px;">Responsable</th>
+                            @endif
+                            <th style="width: 100px;">Statut</th>
+                            <th style="width: 80px;">Priorité</th>
+                            <th style="width: 100px;">Échéance</th>
+                            <th style="width: 120px;">Créé le</th>
+                            <th style="width: 100px;" class="text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($parapheurs as $parapheur)
+                        <tr class="{{ $parapheur->statut == 'en_retard' ? 'table-danger' : '' }}">
+                            <!-- Référence -->
+                            <td>
+                                <strong class="text-primary">{{ $parapheur->reference }}</strong>
+                                @if($parapheur->confidentialite == 'tres_confidentiel')
+                                <br><span class="badge bg-dark"><i class="fas fa-lock"></i> Secret</span>
+                                @endif
+                            </td>
+                            
+                            <!-- Objet -->
+                            <td>
+                                <div class="fw-bold" title="{{ $parapheur->objet }}">
+                                    {{ Str::limit($parapheur->objet, 50) }}
+                                </div>
+                                <small class="text-muted" title="{{ $parapheur->description }}">
+                                    {{ Str::limit($parapheur->description, 40) }}
+                                </small>
+                            </td>
+                            
+                            <!-- Colonnes Superadmin -->
+                            @if(auth()->user()->hasRole('superadmin'))
+                            <td>
+                                <span class="badge bg-info">
+                                    {{ $parapheur->direction->sigle ?? 'N/A' }}
+                                </span>
+                            </td>
+                            <td>
+                                <small>{{ $parapheur->service->code ?? 'N/A' }}</small>
+                            </td>
+                            <td>
+                                <div class="small">
+                                    {{ Str::limit($parapheur->createur->name ?? 'N/A', 15) }}
+                                </div>
+                                <span class="badge bg-secondary">
+                                    {{ $parapheur->createur->roles->first()->name ?? '' }}
+                                </span>
+                            </td>
+                            <td>
+                                @if($parapheur->responsableActuel)
+                                <div class="small">
+                                    {{ Str::limit($parapheur->responsableActuel->name, 15) }}
+                                </div>
+                                <span class="badge bg-warning">
+                                    {{ $parapheur->responsableActuel->roles->first()->name ?? '' }}
+                                </span>
+                                @else
+                                <span class="text-muted">-</span>
+                                @endif
+                            </td>
+                            @endif
+                            
+                            <!-- Statut -->
+                            <td>
+                                @if($parapheur->statut == 'en_attente')
+                                <span class="badge bg-warning"><i class="fas fa-clock"></i> En attente</span>
+                                @elseif($parapheur->statut == 'en_cours')
+                                <span class="badge bg-info"><i class="fas fa-spinner"></i> En cours</span>
+                                @elseif($parapheur->statut == 'valide')
+                                <span class="badge bg-success"><i class="fas fa-check"></i> Validé</span>
+                                @elseif($parapheur->statut == 'rejete')
+                                <span class="badge bg-danger"><i class="fas fa-times"></i> Rejeté</span>
+                                @elseif($parapheur->statut == 'en_retard')
+                                <span class="badge bg-dark"><i class="fas fa-exclamation"></i> En retard</span>
+                                @elseif($parapheur->statut == 'archive')
+                                <span class="badge bg-secondary"><i class="fas fa-archive"></i> Archivé</span>
+                                @else
+                                <span class="badge bg-light text-dark">{{ $parapheur->statut }}</span>
+                                @endif
+                            </td>
+                            
+                            <!-- Priorité -->
+                            <td>
+                                @if($parapheur->priorite == 'urgente')
+                                <span class="badge bg-danger"><i class="fas fa-exclamation"></i> Urgente</span>
+                                @elseif($parapheur->priorite == 'haute')
+                                <span class="badge bg-warning"><i class="fas fa-arrow-up"></i> Haute</span>
+                                @elseif($parapheur->priorite == 'normale')
+                                <span class="badge bg-primary"><i class="fas fa-equals"></i> Normale</span>
+                                @else
+                                <span class="badge bg-success"><i class="fas fa-arrow-down"></i> Basse</span>
+                                @endif
+                            </td>
+                            
+                            <!-- Échéance -->
+                            <td>
+                                <div>{{ $parapheur->date_echeance->format('d/m/Y') }}</div>
+                                @if($parapheur->statut == 'en_retard')
+                                <small class="text-danger">
+                                    <i class="fas fa-clock"></i> Retard
+                                </small>
+                                @endif
+                            </td>
+                            
+                            <!-- Date création -->
+                            <td>
+                                <div class="small">
+                                    {{ $parapheur->created_at->format('d/m/Y') }}
+                                </div>
+                                <div class="text-muted">
+                                    {{ $parapheur->created_at->format('H:i') }}
+                                </div>
+                            </td>
+                            
+                            <!-- Actions -->
+                            <td class="text-center">
+                                <div class="btn-group btn-group-sm">
+                                    <!-- Voir -->
+                                    <a href="{{ route('parapheurs.show', $parapheur) }}" 
+                                       class="btn btn-outline-primary" title="Voir détail">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    
+                                    <!-- Actions Superadmin -->
+                                    @if(auth()->user()->hasRole('superadmin'))
+                                    <button type="button" class="btn btn-outline-dark dropdown-toggle dropdown-toggle-split" 
+                                            data-bs-toggle="dropdown" title="Actions admin">
+                                        <span class="visually-hidden">Actions</span>
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li>
+                                            <a class="dropdown-item" href="#" data-bs-toggle="modal" 
+                                               data-bs-target="#reassignModal{{ $parapheur->id }}">
+                                                <i class="fas fa-user-edit text-warning"></i> Réassigner
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item" href="#" data-bs-toggle="modal" 
+                                               data-bs-target="#forceModal{{ $parapheur->id }}">
+                                                <i class="fas fa-forward text-info"></i> Forcer l'étape
+                                            </a>
+                                        </li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li>
+                                            <a class="dropdown-item text-success" href="#" 
+                                               onclick="return confirm('Marquer comme validé ?')">
+                                                <i class="fas fa-check"></i> Valider
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item text-danger" href="#" 
+                                               onclick="return confirm('Archiver ce parapheur ?')">
+                                                <i class="fas fa-archive"></i> Archiver
+                                            </a>
+                                        </li>
+                                    </ul>
+                                    @endif
+                                </div>
+                            </td>
+                        </tr>
+                        @empty
+                        <tr>
+                            <td colspan="{{ auth()->user()->hasRole('superadmin') ? 11 : 6 }}" 
+                                class="text-center py-5">
+                                <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                                <p class="text-muted h5">Aucun parapheur trouvé</p>
+                                <p class="text-muted">Aucun parapheur ne correspond à vos critères</p>
+                                <a href="{{ route('parapheurs.create') }}" class="btn btn-primary mt-2">
+                                    <i class="fas fa-plus"></i> Créer le premier parapheur
+                                </a>
+                            </td>
+                        </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Pagination -->
+        @if($parapheurs->hasPages())
+        <div class="card-footer bg-white">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="text-muted">
+                    Affichage de {{ $parapheurs->firstItem() }} à {{ $parapheurs->lastItem() }} 
+                    sur {{ $parapheurs->total() }} parapheurs
+                </div>
+                <div>
+                    {{ $parapheurs->links() }}
+                </div>
+            </div>
+        </div>
+        @endif
+    </div>
+</div>
 
-        // Pagination
-        document.querySelectorAll('.page-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                if (!this.querySelector('i')) {
-                    document.querySelectorAll('.page-btn').forEach(b => b.classList.remove('active'));
-                    this.classList.add('active');
-                }
-            });
-        });
+<!-- MODALS POUR ACTIONS SUPERADMIN -->
+@if(auth()->user()->hasRole('superadmin') && isset($utilisateurs))
+@foreach($parapheurs as $parapheur)
+<!-- Modal réassignation -->
+<div class="modal fade" id="reassignModal{{ $parapheur->id }}" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form action="{{ route('admin.parapheurs.reassign', $parapheur) }}" method="POST">
+                @csrf
+                <div class="modal-header bg-warning text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-user-edit"></i> Réassigner le parapheur
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p><strong>Parapheur :</strong> {{ $parapheur->reference }}</p>
+                    <p><strong>Objet :</strong> {{ $parapheur->objet }}</p>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Nouveau responsable *</label>
+                        <select name="nouveau_responsable_id" class="form-select" required>
+                            <option value="">Sélectionner un utilisateur</option>
+                            @foreach($utilisateurs as $user)
+                            <option value="{{ $user->id }}">
+                                {{ $user->name }} ({{ $user->roles->first()->name ?? 'N/A' }})
+                            </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Commentaire administratif *</label>
+                        <textarea name="commentaire" class="form-control" rows="3" 
+                                  placeholder="Raison de la réassignation..." required></textarea>
+                        <small class="form-text text-muted">Ce commentaire sera enregistré dans l'historique</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-warning">Réassigner</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
-        // Actions des boutons
-        document.querySelectorAll('.btn-view').forEach(btn => {
-            btn.addEventListener('click', function() {
-                alert('Voir les détails du parapheur');
-            });
-        });
+<!-- Modal forcer étape -->
+<div class="modal fade" id="forceModal{{ $parapheur->id }}" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form action="{{ route('admin.parapheurs.force', $parapheur) }}" method="POST">
+                @csrf
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-forward"></i> Forcer le passage d'étape
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i> 
+                        <strong>Action administrative exceptionnelle</strong>
+                        <p class="mb-0 small">Cette action contourne le workflow normal</p>
+                    </div>
+                    
+                    <p><strong>Parapheur :</strong> {{ $parapheur->reference }}</p>
+                    <p><strong>Étape actuelle :</strong> {{ $parapheur->etape_actuelle }}/{{ $parapheur->etapes_total }}</p>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Passer directement à l'étape *</label>
+                        <select name="nouvelle_etape" class="form-select" required>
+                            <option value="">Sélectionner une étape</option>
+                            @for($i = $parapheur->etape_actuelle + 1; $i <= $parapheur->etapes_total; $i++)
+                            <option value="{{ $i }}">Étape {{ $i }} - Validation</option>
+                            @endfor
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Justification administrative *</label>
+                        <textarea name="justification" class="form-control" rows="3" 
+                                  placeholder="Raison du contournement du workflow..." required></textarea>
+                        <small class="form-text text-muted">Cette justification sera enregistrée dans l'historique</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-danger">Forcer le passage</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+@endforeach
+@endif
 
-        document.querySelectorAll('.btn-edit').forEach(btn => {
-            btn.addEventListener('click', function() {
-                alert('Modifier le parapheur');
-            });
-        });
+@endsection
 
-        document.querySelectorAll('.btn-delete').forEach(btn => {
-            btn.addEventListener('click', function() {
-                if (confirm('Êtes-vous sûr de vouloir supprimer ce parapheur ?')) {
-                    alert('Parapheur supprimé');
-                }
-            });
-        });
-    </script>
-</body>
-</html>
+@push('styles')
+<style>
+.table th {
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    border-top: none;
+}
+.table td {
+    vertical-align: middle;
+}
+.badge {
+    font-size: 0.75em;
+    font-weight: 500;
+}
+.card-header {
+    border-bottom: 1px solid #e3e6f0;
+}
+</style>
+@endpush
