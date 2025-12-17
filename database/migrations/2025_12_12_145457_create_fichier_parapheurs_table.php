@@ -1,4 +1,5 @@
 <?php
+// database/migrations/2025_12_12_145457_create_fichier_parapheurs_table.php
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
@@ -6,27 +7,20 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    public function up()
+    public function up(): void
     {
         Schema::create('fichier_parapheurs', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('parapheur_id')->constrained('parapheurs')->onDelete('cascade');
-            $table->string('nom_original');
-            $table->string('nom_stockage');
+            $table->foreignId('parapheur_id')->constrained('parapheurs');
+            $table->string('nom_fichier');
             $table->string('chemin');
-            $table->string('type_mime');
+            $table->string('type');
             $table->integer('taille');
-            $table->string('extension');
-            $table->foreignId('uploader_id')->constrained('users');
-            $table->text('commentaire')->nullable();
-            $table->integer('telechargements')->default(0);
-            $table->boolean('est_signature')->default(false);
-            $table->boolean('est_principal')->default(false);
             $table->timestamps();
         });
     }
 
-    public function down()
+    public function down(): void
     {
         Schema::dropIfExists('fichier_parapheurs');
     }

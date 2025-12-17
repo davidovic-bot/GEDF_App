@@ -1,102 +1,158 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\ParapheurController;
 use App\Http\Controllers\StatistiqueController;
 use App\Http\Controllers\AdminController;
 
-/*
-|--------------------------------------------------------------------------
-| Web Routes
-|--------------------------------------------------------------------------
-|
-| Routes publiques
-|
-*/
-
-// Page d'accueil redirige vers le login
+// Page d'accueil
 Route::get('/', function () {
     return view('auth.login');
 });
 
-// Routes d'authentification Breeze
+// Authentification Breeze
 require __DIR__.'/auth.php';
 
-/*
-|--------------------------------------------------------------------------
-| DASHBOARDS SELON LES RÔLES
-|--------------------------------------------------------------------------
-*/
+// =============================================================================
+// DASHBOARDS PAR RÔLE
+// =============================================================================
 
-// SUPERADMIN
 Route::middleware(['auth', 'issuperadmin'])->get('/dashboard/superadmin', function () {
     return view('dashboards.superadmin');
 })->name('dashboard.superadmin');
 
-// ADMIN
 Route::middleware(['auth', 'isadmin'])->get('/dashboard/admin', function () {
     return view('dashboards.admin');
 })->name('dashboard.admin');
 
-// SECRETAIRE
 Route::middleware(['auth', 'issecretaire'])->get('/dashboard/secretaire', function () {
-    return view('dashboards.secretaire');
+    $parapheursASaisir = DB::table('parapheurs')
+        ->join('parapheur_statuts', 'parapheurs.statut_id', '=', 'parapheur_statuts.id')
+        ->where('parapheur_statuts.code', 'creer')
+        ->where('parapheurs.created_by', auth()->id())
+        ->count();
+        
+    $parapheursRejetes = DB::table('parapheurs')
+        ->join('parapheur_statuts', 'parapheurs.statut_id', '=', 'parapheur_statuts.id')
+        ->where('parapheur_statuts.code', 'rejete')
+        ->where('parapheurs.created_by', auth()->id())
+        ->count();
+    
+    return view('dashboards.secretaire', compact('parapheursASaisir', 'parapheursRejetes'));
 })->name('dashboard.secretaire');
 
-// GESTIONNAIRE
 Route::middleware(['auth', 'isgestionnaire'])->get('/dashboard/gestionnaire', function () {
-    return view('dashboards.gestionnaire');
+    $parapheursAAnalyser = DB::table('parapheurs')
+        ->join('parapheur_statuts', 'parapheurs.statut_id', '=', 'parapheur_statuts.id')
+        ->where('parapheur_statuts.code', 'analyse')
+        ->count();
+    
+    return view('dashboards.gestionnaire', compact('parapheursAAnalyser'));
 })->name('dashboard.gestionnaire');
 
-// CHEF DE SERVICE
 Route::middleware(['auth', 'ischefservice'])->get('/dashboard/chef-service', function () {
-    return view('dashboards.chef-service');
+    $parapheursAValider = DB::table('parapheurs')
+        ->join('parapheur_statuts', 'parapheurs.statut_id', '=', 'parapheur_statuts.id')
+        ->where('parapheur_statuts.code', 'attente_validation')
+        ->count();
+    
+    return view('dashboards.chef-service', compact('parapheursAValider'));
 })->name('dashboard.chefservice');
 
-// DIRECTEUR
 Route::middleware(['auth', 'isdirecteur'])->get('/dashboard/directeur', function () {
-    return view('dashboards.directeur');
+    $parapheursASigner = DB::table('parapheurs')
+        ->join('parapheur_statuts', 'parapheurs.statut_id', '=', 'parapheur_statuts.id')
+        ->where('parapheur_statuts.code', 'attente_signature')
+        ->count();
+    
+    return view('dashboards.directeur', compact('parapheursASigner'));
 })->name('dashboard.directeur');
 
 // =============================================================================
-// MODULE PARAPHEURS - ACCESSIBLE SELON LES RÔLES
+// MODULE PARAPHEURS - ORDRE CORRECT : SPÉCIFIQUE → GÉNÉRIQUE
 // =============================================================================
 
 Route::middleware(['auth'])->prefix('parapheurs')->name('parapheurs.')->group(function () {
-    // Routes principales (la sécurité se fait dans le contrôleur)
-    Route::get('/', [ParapheurController::class, 'index'])->name('index');
-    Route::get('/create', [ParapheurController::class, 'create'])->name('create');
-    Route::post('/', [ParapheurController::class, 'store'])->name('store');
+    
+    // ====================
+    // 1. ROUTES SPÉCIFIQUES (DOIVENT ÊTRE EN PREMIER)
+    // ====================
+    
+    // Redirection selon le rôle
+    Route::get('/', function () {
+        $user = auth()->user();
+        switch ($user->role->name) {
+            case 'secretaire':
+                return redirect()->route('parapheurs.secretaire');
+            case 'agent':
+            case 'gestionnaire':
+                return redirect()->route('parapheurs.agent');
+            case 'chef_service':
+                return redirect()->route('parapheurs.chef_service');
+            case 'directeur':
+                return redirect()->route('parapheurs.directeur');
+            default:
+                return redirect()->route('parapheurs.supervision');
+        }
+    })->name('index');
+    
+    // Vue SECRÉTAIRE
+    Route::middleware(['issecretaire'])->group(function () {
+        Route::get('/secretaire', [ParapheurController::class, 'vueSecretaire'])->name('secretaire');
+        Route::get('/a-saisir', [ParapheurController::class, 'aSaisir'])->name('a.saisir');
+        Route::get('/rejetes', [ParapheurController::class, 'rejetes'])->name('rejetes');
+        Route::get('/create', [ParapheurController::class, 'create'])->name('create');
+        Route::post('/', [ParapheurController::class, 'store'])->name('store');
+        Route::post('/{parapheur}/transmettre-agent', [ParapheurController::class, 'transmettreAgent'])->name('transmettre.agent');
+    });
+    
+    // Vue AGENT/GESTIONNAIRE
+    Route::middleware(['isgestionnaire'])->group(function () {
+        Route::get('/agent', [ParapheurController::class, 'vueAgent'])->name('agent');
+        Route::get('/a-analyser', [ParapheurController::class, 'aAnalyser'])->name('a.analyser');
+        Route::post('/{parapheur}/transmettre-chef-service', [ParapheurController::class, 'transmettreChefService'])->name('transmettre.chef_service');
+        Route::post('/{parapheur}/rejeter-vers-secretaire', [ParapheurController::class, 'rejeterVersSecretaire'])->name('rejeter.secretaire');
+    });
+    
+    // Vue CHEF SERVICE
+    Route::middleware(['ischefservice'])->group(function () {
+        Route::get('/chef-service', [ParapheurController::class, 'vueChefService'])->name('chef_service');
+        Route::get('/a-valider', [ParapheurController::class, 'aValider'])->name('a.valider');
+        Route::post('/{parapheur}/valider', [ParapheurController::class, 'valider'])->name('valider');
+        Route::post('/{parapheur}/rejeter-vers-agent', [ParapheurController::class, 'rejeterVersAgent'])->name('rejeter.agent');
+        Route::post('/{parapheur}/transmettre-directeur', [ParapheurController::class, 'transmettreDirecteur'])->name('transmettre.directeur');
+    });
+    
+    // Vue DIRECTEUR
+    Route::middleware(['isdirecteur'])->group(function () {
+        Route::get('/directeur', [ParapheurController::class, 'vueDirecteur'])->name('directeur');
+        Route::get('/a-signer', [ParapheurController::class, 'aSigner'])->name('a.signer');
+        Route::post('/{parapheur}/signer', [ParapheurController::class, 'signer'])->name('signer');
+        Route::post('/{parapheur}/rejeter-exceptionnel', [ParapheurController::class, 'rejeterExceptionnel'])->name('rejeter.exceptionnel');
+    });
+    
+    // ====================
+    // 2. SUPERVISION (Admin/Superadmin) - AVANT les routes avec paramètres
+    // ====================
+    
+    Route::middleware(['issuperadmin'])->group(function () {
+        Route::get('/supervision', [ParapheurController::class, 'supervision'])->name('supervision');
+        Route::post('/{parapheur}/archiver', [ParapheurController::class, 'archiver'])->name('archiver');
+        Route::get('/historique/{parapheur}', [ParapheurController::class, 'historique'])->name('historique');
+    });
+    
+    // ====================
+    // 3. ROUTES AVEC PARAMÈTRES (DOIVENT ÊTRE EN DERNIER)
+    // ====================
+    
     Route::get('/{parapheur}', [ParapheurController::class, 'show'])->name('show');
     Route::get('/{parapheur}/edit', [ParapheurController::class, 'edit'])->name('edit');
     Route::put('/{parapheur}', [ParapheurController::class, 'update'])->name('update');
-    Route::delete('/{parapheur}', [ParapheurController::class, 'destroy'])->name('destroy');
-    
-    // Actions workflow
-    Route::post('/{parapheur}/valider', [ParapheurController::class, 'valider'])->name('valider');
-    Route::post('/{parapheur}/rejeter', [ParapheurController::class, 'rejeter'])->name('rejeter');
-    Route::post('/{parapheur}/transmettre', [ParapheurController::class, 'transmettre'])->name('transmettre');
-    Route::post('/{parapheur}/fichiers', [ParapheurController::class, 'joindreFichier'])->name('fichiers.store');
-    
-    // Actions spécifiques superadmin
-    Route::middleware(['issuperadmin'])->group(function () {
-        Route::post('/{parapheur}/reassign', [ParapheurController::class, 'reassign'])->name('reassign');
-        Route::post('/{parapheur}/forcer-etape', [ParapheurController::class, 'forcerEtape'])->name('forcer.etape');
-        Route::post('/{parapheur}/archiver', [ParapheurController::class, 'archiver'])->name('archiver');
-    });
 });
 
 // =============================================================================
-// MODULE STATISTIQUES
-// =============================================================================
-
-Route::middleware(['auth', 'issuperadmin'])->prefix('statistiques')->group(function () {
-    Route::get('/', [StatistiqueController::class, 'index'])->name('statistiques.index');
-});
-
-// =============================================================================
-// MODULE ADMINISTRATION
+// MODULES ADMINISTRATIFS
 // =============================================================================
 
 Route::middleware(['auth', 'issuperadmin'])->prefix('administration')->group(function () {
@@ -106,32 +162,11 @@ Route::middleware(['auth', 'issuperadmin'])->prefix('administration')->group(fun
     Route::get('/audit', [AdminController::class, 'audit'])->name('admin.audit');
 });
 
-// =============================================================================
-// DASHBOARD SUPERADMIN (alternative)
-// =============================================================================
-
-Route::get('/dashboard-superadmin', function () {
-    return view('dashboard-superadmin');
-})->name('dashboard.superadmin');
-
-// =============================================================================
-// ADMINISTRATION AVEC RESSOURCES
-// =============================================================================
-
-Route::middleware(['auth', 'role:superadmin|admin'])->prefix('admin')->name('admin.')->group(function () {
-    Route::get('/dashboard', function () {
-        return view('admin.dashboard');
-    })->name('dashboard');
-    
-    // À décommenter quand tu auras ces contrôleurs
-    // Route::resource('utilisateurs', Admin\UtilisateurController::class);
-    // Route::resource('roles', Admin\RoleController::class);
+Route::middleware(['auth', 'issuperadmin'])->prefix('statistiques')->group(function () {
+    Route::get('/', [StatistiqueController::class, 'index'])->name('statistiques.index');
 });
 
-// =============================================================================
-// ROUTE FALLBACK POUR LES ERREURS 404
-// =============================================================================
-
+// Fallback
 Route::fallback(function () {
     return redirect()->route('dashboard.superadmin');
 });

@@ -3,817 +3,649 @@
 namespace App\Http\Controllers;
 
 use App\Models\Parapheur;
-use App\Models\Service;
-use App\Models\Direction;
-use App\Models\User;
+use App\Models\ParapheurStatut;
+use App\Models\TypeCourrier;
+use App\Models\ParapheurHistorique;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 
 class ParapheurController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Redirection principale selon le rôle
      */
-    public function index(Request $request)
+    public function index()
     {
-        try {
-            // Vérifier d'abord si la table existe
-            if (!\Schema::hasTable('parapheurs')) {
-                throw new \Exception("La table 'parapheurs' n'existe pas. Exécutez les migrations.");
-            }
-            
-            // Initialiser la requête
-            $query = Parapheur::query();
-            
-            $user = auth()->user();
-            
-            // FILTRAGE PAR RÔLE
-            if ($user->hasRole('superadmin')) {
-                // Superadmin voit TOUT - pas de restriction
-            } 
-            elseif ($user->hasRole('directeur')) {
-                // Directeur : voir les parapheurs de sa direction
-                if ($user->direction_id) {
-                    $query->where('direction_id', $user->direction_id);
-                }
-            }
-            elseif ($user->hasRole('chef_service') || $user->hasRole('chef')) {
-                // Chef de service : voir les parapheurs de son service
-                if ($user->service_id) {
-                    $query->where('service_id', $user->service_id);
-                }
-            }
-            else {
-                // Agents et autres : voir leurs propres parapheurs
-                $query->where(function($q) use ($user) {
-                    $q->where('createur_id', $user->id)
-                      ->orWhere('responsable_actuel_id', $user->id);
-                });
-            }
-            
-            // FILTRES PARAMÉTRABLES
-            if ($request->filled('statut')) {
-                $query->where('statut', $request->statut);
-            }
-            
-            if ($request->filled('priorite')) {
-                $query->where('priorite', $request->priorite);
-            }
-            
-            if ($request->filled('service_id')) {
-                $query->where('service_id', $request->service_id);
-            }
-            
-            if ($request->filled('date_debut')) {
-                $query->where('date_creation', '>=', $request->date_debut);
-            }
-            
-            if ($request->filled('date_fin')) {
-                $query->where('date_creation', '<=', $request->date_fin);
-            }
-            
-            // Recherche texte
-            if ($request->filled('search')) {
-                $search = $request->search;
-                $query->where(function($q) use ($search) {
-                    $q->where('reference', 'LIKE', "%{$search}%")
-                      ->orWhere('objet', 'LIKE', "%{$search}%")
-                      ->orWhere('description', 'LIKE', "%{$search}%");
-                });
-            }
-            
-            // Tri
-            $sortBy = $request->get('sort_by', 'created_at');
-            $sortOrder = $request->get('sort_order', 'desc');
-            $query->orderBy($sortBy, $sortOrder);
-            
-            // Pagination
-            $parapheurs = $query->paginate(20)->withQueryString();
-            
-            // Données pour les filtres (superadmin)
-            $services = $user->hasRole('superadmin') ? Service::where('actif', true)->get() : collect([]);
-            $directions = $user->hasRole('superadmin') ? Direction::where('actif', true)->get() : collect([]);
-            
-            return view('parapheurs.index', compact('parapheurs', 'services', 'directions'));
-            
-        } catch (\Exception $e) {
-            // Mode dégradé - données de test
-            $parapheursTest = $this->getDonneesTest();
-            
-            return view('parapheurs.index', [
-                'parapheurs' => $parapheursTest,
-                'services' => collect([]),
-                'directions' => collect([]),
-                'error_message' => 'Mode démo - ' . $e->getMessage()
-            ]);
+        $user = Auth::user();
+        $roleName = $user->role->name;
+        
+        switch ($roleName) {
+            case 'secretaire':
+                return redirect()->route('parapheurs.secretaire');
+            case 'agent':
+            case 'gestionnaire':
+                return redirect()->route('parapheurs.agent');
+            case 'chef_service':
+                return redirect()->route('parapheurs.chef_service');
+            case 'directeur':
+                return redirect()->route('parapheurs.directeur');
+            case 'admin':
+            case 'superadmin':
+                return redirect()->route('parapheurs.supervision');
+            default:
+                return redirect()->route('dashboard.' . $roleName);
         }
     }
 
     /**
-     * Show the form for creating a new resource.
+     * VUE SECRÉTAIRE
      */
+    public function vueSecretaire()
+    {
+        $parapheurs = Parapheur::with(['statut', 'typeCourrier'])
+            ->whereIn('statut_id', function($query) {
+                $query->select('id')
+                    ->from('parapheur_statuts')
+                    ->whereIn('code', ['creer', 'rejete']);
+            })
+            ->where('created_by', Auth::id())
+            ->orderBy('date_limite')
+            ->paginate(20);
+        
+        return view('parapheurs.secretaire', compact('parapheurs'));
+    }
+    
+    public function aSaisir()
+    {
+        $statutCreer = ParapheurStatut::where('code', 'creer')->first();
+        
+        $parapheurs = Parapheur::with(['typeCourrier'])
+            ->where('statut_id', $statutCreer->id)
+            ->where('created_by', Auth::id())
+            ->orderBy('date_limite')
+            ->paginate(20);
+        
+        return view('parapheurs.a-saisir', compact('parapheurs'));
+    }
+    
+    public function rejetes()
+    {
+        $statutRejete = ParapheurStatut::where('code', 'rejete')->first();
+        
+        $parapheurs = Parapheur::with(['typeCourrier'])
+            ->where('statut_id', $statutRejete->id)
+            ->where('created_by', Auth::id())
+            ->orderBy('date_limite')
+            ->paginate(20);
+        
+        return view('parapheurs.rejetes', compact('parapheurs'));
+    }
+    
     public function create()
     {
-        $services = Service::where('actif', true)->get();
-        $directions = Direction::where('actif', true)->get();
-        
-        return view('parapheurs.create', compact('services', 'directions'));
+        $types = TypeCourrier::where('actif', true)->get();
+        return view('parapheurs.create', compact('types'));
     }
-
-    /**
-     * Store a newly created resource in storage.
-     */
+    
     public function store(Request $request)
     {
         $request->validate([
             'objet' => 'required|string|max:500',
-            'description' => 'required|string',
-            'service_id' => 'required|exists:services,id',
-            'direction_id' => 'required|exists:directions,id',
-            'date_echeance' => 'required|date|after:today',
-            'priorite' => 'required|in:basse,normale,haute,urgente',
-            'confidentialite' => 'sometimes|in:standard,confidentiel,tres_confidentiel',
-            'fichiers.*' => 'nullable|file|max:10240|mimes:pdf,doc,docx,xls,xlsx,jpg,png'
+            'type_courrier_id' => 'required|exists:type_courriers,id',
+            'expediteur' => 'required|string|max:255',
+            'service_expediteur' => 'required|string|max:255',
+            'date_reception' => 'required|date',
+            'date_limite' => 'required|date|after_or_equal:date_reception',
+            'priorite' => 'required|in:bas,normal,urgent',
         ]);
         
-        DB::beginTransaction();
+        // Générer la référence
+        $statutCreer = ParapheurStatut::where('code', 'creer')->first();
+        $reference = 'PAR-' . date('Ymd') . '-' . str_pad(Parapheur::count() + 1, 4, '0', STR_PAD_LEFT);
         
-        try {
-            // Générer référence
-            $reference = $this->genererReference();
-            
-            // Déterminer le responsable initial (chef de service par défaut)
-            $responsableInitial = $this->getResponsableInitial($request->service_id, $request->direction_id);
-            
-            $parapheur = Parapheur::create([
-                'reference' => $reference,
-                'objet' => $request->objet,
-                'description' => $request->description,
-                'priorite' => $request->priorite,
-                'confidentialite' => $request->confidentialite ?? 'standard',
-                'date_creation' => now(),
-                'date_echeance' => $request->date_echeance,
-                'createur_id' => auth()->id(),
-                'service_id' => $request->service_id,
-                'direction_id' => $request->direction_id,
-                'statut' => 'en_attente',
-                'etape_actuelle' => 1,
-                'etapes_total' => 3, // À configurer
-                'responsable_actuel_id' => $responsableInitial,
-                'workflow' => 'standard_drs'
-            ]);
-            
-            // Gestion fichiers
-            if ($request->hasFile('fichiers')) {
-                foreach ($request->file('fichiers') as $fichier) {
-                    $this->stockerFichier($parapheur, $fichier);
-                }
-            }
-            
-            // Historique
-            $this->creerHistorique($parapheur, 'creation', 'Parapheur créé', auth()->id());
-            
-            DB::commit();
-            
-            return redirect()->route('parapheurs.show', $parapheur)
-                            ->with('success', 'Parapheur créé avec succès. Référence: ' . $reference);
-                            
-        } catch (\Exception $e) {
-            DB::rollBack();
-            
-            return back()->withInput()
-                        ->with('error', 'Erreur lors de la création: ' . $e->getMessage());
-        }
+        $parapheur = Parapheur::create([
+            'reference' => $reference,
+            'objet' => $request->objet,
+            'type_courrier_id' => $request->type_courrier_id,
+            'expediteur' => $request->expediteur,
+            'service_expediteur' => $request->service_expediteur,
+            'date_reception' => $request->date_reception,
+            'date_limite' => $request->date_limite,
+            'priorite' => $request->priorite,
+            'statut_id' => $statutCreer->id,
+            'created_by' => Auth::id(),
+            'current_role_id' => Auth::user()->role_id, // Secrétaire
+        ]);
+        
+        // Historique
+        ParapheurHistorique::create([
+            'parapheur_id' => $parapheur->id,
+            'user_id' => Auth::id(),
+            'action' => 'Création du parapheur',
+            'nouveau_statut_id' => $statutCreer->id,
+            'commentaire' => 'Parapheur créé par le secrétariat'
+        ]);
+        
+        return redirect()->route('parapheurs.show', $parapheur)
+            ->with('success', 'Parapheur créé avec succès !');
     }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show($id)
-    {
-        try {
-            $parapheur = Parapheur::with([
-                'createur', 
-                'service', 
-                'direction', 
-                'responsableActuel',
-                'fichiers',
-                'historiques.user'
-            ])->findOrFail($id);
-            
-            // Vérifier les permissions
-            $this->authorizeView($parapheur);
-            
-            return view('parapheurs.show', compact('parapheur'));
-            
-        } catch (\Exception $e) {
-            // Mode test
-            $parapheurTest = $this->getParapheurTest($id);
-            return view('parapheurs.show', [
-                'parapheur' => $parapheurTest,
-                'message' => 'Mode démo - ' . $e->getMessage()
-            ]);
-        }
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit($id)
-    {
-        try {
-            $parapheur = Parapheur::findOrFail($id);
-            
-            // Vérifier permissions
-            $this->authorizeEdit($parapheur);
-            
-            $services = Service::where('actif', true)->get();
-            $directions = Direction::where('actif', true)->get();
-            
-            return view('parapheurs.edit', compact('parapheur', 'services', 'directions'));
-            
-        } catch (\Exception $e) {
-            return redirect()->route('parapheurs.index')
-                            ->with('error', 'Parapheur non trouvé ou non modifiable');
-        }
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, $id)
-    {
-        try {
-            $parapheur = Parapheur::findOrFail($id);
-            
-            // Vérifier permissions
-            $this->authorizeEdit($parapheur);
-            
-            $request->validate([
-                'objet' => 'required|string|max:500',
-                'description' => 'required|string',
-                'service_id' => 'required|exists:services,id',
-                'direction_id' => 'required|exists:directions,id',
-                'date_echeance' => 'required|date|after:today',
-                'priorite' => 'required|in:basse,normale,haute,urgente',
-                'confidentialite' => 'sometimes|in:standard,confidentiel,tres_confidentiel'
-            ]);
-            
-            $parapheur->update([
-                'objet' => $request->objet,
-                'description' => $request->description,
-                'priorite' => $request->priorite,
-                'confidentialite' => $request->confidentialite ?? $parapheur->confidentialite,
-                'date_echeance' => $request->date_echeance,
-                'service_id' => $request->service_id,
-                'direction_id' => $request->direction_id
-            ]);
-            
-            $this->creerHistorique($parapheur, 'modification', 'Parapheur modifié', auth()->id());
-            
-            return redirect()->route('parapheurs.show', $parapheur)
-                            ->with('success', 'Parapheur mis à jour avec succès.');
-                            
-        } catch (\Exception $e) {
-            return back()->withInput()
-                        ->with('error', 'Erreur lors de la mise à jour: ' . $e->getMessage());
-        }
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy($id)
-    {
-        try {
-            $parapheur = Parapheur::findOrFail($id);
-            
-            // Seul superadmin ou créateur peut supprimer (si brouillon)
-            if (!auth()->user()->hasRole('superadmin') && 
-                ($parapheur->createur_id !== auth()->id() || $parapheur->statut !== 'brouillon')) {
-                abort(403, 'Action non autorisée.');
-            }
-            
-            $parapheur->delete();
-            
-            return redirect()->route('parapheurs.index')
-                            ->with('success', 'Parapheur supprimé avec succès.');
-                            
-        } catch (\Exception $e) {
-            return back()->with('error', 'Erreur lors de la suppression: ' . $e->getMessage());
-        }
-    }
-
-    // =========================================================================
-    // ACTIONS WORKFLOW
-    // =========================================================================
     
-    /**
-     * Valider une étape
-     */
-    public function valider(Request $request, $id)
+    public function transmettreAgent(Parapheur $parapheur)
     {
+        // Vérifier que l'utilisateur peut faire cette action
+        if (Auth::user()->role->name !== 'secretaire') {
+            abort(403);
+        }
+        
+        $statutAnalyse = ParapheurStatut::where('code', 'analyse')->first();
+        $roleAgent = DB::table('roles')->where('name', 'agent')->first();
+        
+        $parapheur->update([
+            'statut_id' => $statutAnalyse->id,
+            'current_role_id' => $roleAgent->id,
+        ]);
+        
+        // Historique
+        ParapheurHistorique::create([
+            'parapheur_id' => $parapheur->id,
+            'user_id' => Auth::id(),
+            'action' => 'Transmis à l\'agent',
+            'ancien_statut_id' => $parapheur->statut_id,
+            'nouveau_statut_id' => $statutAnalyse->id,
+            'commentaire' => 'Parapheur transmis pour analyse'
+        ]);
+        
+        return redirect()->route('parapheurs.show', $parapheur)
+            ->with('success', 'Parapheur transmis à l\'agent pour analyse.');
+    }
+
+    /**
+     * VUE AGENT/GESTIONNAIRE
+     */
+    public function vueAgent()
+    {
+        $statutAnalyse = ParapheurStatut::where('code', 'analyse')->first();
+        
+        $parapheurs = Parapheur::with(['statut', 'typeCourrier', 'createur'])
+            ->where('statut_id', $statutAnalyse->id)
+            ->orderBy('date_limite')
+            ->paginate(20);
+        
+        return view('parapheurs.agent', compact('parapheurs'));
+    }
+    
+    public function aAnalyser()
+    {
+        $statutAnalyse = ParapheurStatut::where('code', 'analyse')->first();
+        
+        $parapheurs = Parapheur::with(['typeCourrier', 'createur'])
+            ->where('statut_id', $statutAnalyse->id)
+            ->orderBy('date_limite')
+            ->paginate(20);
+        
+        return view('parapheurs.a-analyser', compact('parapheurs'));
+    }
+    
+    public function transmettreChefService(Request $request, Parapheur $parapheur)
+    {
+        if (!in_array(Auth::user()->role->name, ['agent', 'gestionnaire'])) {
+            abort(403);
+        }
+        
         $request->validate([
             'commentaire' => 'nullable|string|max:1000'
         ]);
         
-        try {
-            $parapheur = Parapheur::findOrFail($id);
-            
-            // Vérifier que l'utilisateur est le responsable actuel
-            if ($parapheur->responsable_actuel_id !== auth()->id()) {
-                throw new \Exception('Vous n\'êtes pas le responsable de ce parapheur.');
-            }
-            
-            // Calculer la prochaine étape
-            $prochaineEtape = $parapheur->etape_actuelle + 1;
-            
-            // Vérifier si c'est la dernière étape
-            $nouveauStatut = $prochaineEtape >= $parapheur->etapes_total ? 'valide' : 'en_cours';
-            
-            // Déterminer le prochain responsable
-            $prochainResponsable = $this->getProchainResponsable($parapheur, $prochaineEtape);
-            
-            DB::beginTransaction();
-            
-            $parapheur->update([
-                'etape_actuelle' => $prochaineEtape,
-                'statut' => $nouveauStatut,
-                'responsable_actuel_id' => $prochainResponsable,
-                'date_validation' => $nouveauStatut === 'valide' ? now() : null
-            ]);
-            
-            $details = "Étape {$parapheur->etape_actuelle} validée" . 
-                      ($request->commentaire ? " - " . $request->commentaire : "");
-            
-            $this->creerHistorique($parapheur, 'validation', $details, auth()->id());
-            
-            DB::commit();
-            
-            return back()->with('success', 'Étape validée avec succès.');
-            
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return back()->with('error', 'Erreur: ' . $e->getMessage());
-        }
-    }
-    
-    /**
-     * Rejeter un parapheur
-     */
-    public function rejeter(Request $request, $id)
-    {
-        $request->validate([
-            'motif' => 'required|string|min:10|max:2000'
+        $statutAttenteValidation = ParapheurStatut::where('code', 'attente_validation')->first();
+        $roleChefService = DB::table('roles')->where('name', 'chef_service')->first();
+        
+        $parapheur->update([
+            'statut_id' => $statutAttenteValidation->id,
+            'current_role_id' => $roleChefService->id,
         ]);
         
-        try {
-            $parapheur = Parapheur::findOrFail($id);
-            
-            // Vérifier que l'utilisateur est le responsable actuel
-            if ($parapheur->responsable_actuel_id !== auth()->id()) {
-                throw new \Exception('Vous n\'êtes pas le responsable de ce parapheur.');
-            }
-            
-            DB::beginTransaction();
-            
-            $parapheur->update([
-                'statut' => 'rejete',
-                'motif_rejet' => $request->motif,
-                'date_rejet' => now()
-            ]);
-            
-            $details = "Parapheur rejeté - Motif: " . $request->motif;
-            $this->creerHistorique($parapheur, 'rejet', $details, auth()->id());
-            
-            DB::commit();
-            
-            return back()->with('success', 'Parapheur rejeté avec succès.');
-            
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return back()->with('error', 'Erreur: ' . $e->getMessage());
-        }
+        ParapheurHistorique::create([
+            'parapheur_id' => $parapheur->id,
+            'user_id' => Auth::id(),
+            'action' => 'Transmis au Chef de Service',
+            'ancien_statut_id' => $parapheur->statut_id,
+            'nouveau_statut_id' => $statutAttenteValidation->id,
+            'commentaire' => $request->commentaire ?? 'Analyse terminée, transmis pour validation'
+        ]);
+        
+        return redirect()->route('parapheurs.show', $parapheur)
+            ->with('success', 'Parapheur transmis au Chef de Service pour validation.');
     }
     
-    /**
-     * Transmettre à l'étape suivante
-     */
-    public function transmettre(Request $request, $id)
+    public function rejeterVersSecretaire(Request $request, Parapheur $parapheur)
     {
+        if (!in_array(Auth::user()->role->name, ['agent', 'gestionnaire'])) {
+            abort(403);
+        }
+        
+        $request->validate([
+            'motif' => 'required|string|max:1000'
+        ]);
+        
+        $statutRejete = ParapheurStatut::where('code', 'rejete')->first();
+        $roleSecretaire = DB::table('roles')->where('name', 'secretaire')->first();
+        
+        $parapheur->update([
+            'statut_id' => $statutRejete->id,
+            'current_role_id' => $roleSecretaire->id,
+        ]);
+        
+        ParapheurHistorique::create([
+            'parapheur_id' => $parapheur->id,
+            'user_id' => Auth::id(),
+            'action' => 'Rejeté vers secrétariat',
+            'ancien_statut_id' => $parapheur->statut_id,
+            'nouveau_statut_id' => $statutRejete->id,
+            'commentaire' => 'Motif: ' . $request->motif
+        ]);
+        
+        return redirect()->route('parapheurs.show', $parapheur)
+            ->with('warning', 'Parapheur rejeté vers le secrétariat pour correction.');
+    }
+
+    /**
+     * VUE CHEF SERVICE
+     */
+    public function vueChefService()
+    {
+        $statuts = ParapheurStatut::whereIn('code', ['attente_validation', 'valide_cs'])->pluck('id');
+        
+        $parapheurs = Parapheur::with(['statut', 'typeCourrier', 'createur'])
+            ->whereIn('statut_id', $statuts)
+            ->orderBy('date_limite')
+            ->paginate(20);
+        
+        return view('parapheurs.chef-service', compact('parapheurs'));
+    }
+    
+    public function aValider()
+    {
+        $statutAttenteValidation = ParapheurStatut::where('code', 'attente_validation')->first();
+        
+        $parapheurs = Parapheur::with(['typeCourrier', 'createur'])
+            ->where('statut_id', $statutAttenteValidation->id)
+            ->orderBy('date_limite')
+            ->paginate(20);
+        
+        return view('parapheurs.a-valider', compact('parapheurs'));
+    }
+    
+    public function valider(Request $request, Parapheur $parapheur)
+    {
+        if (Auth::user()->role->name !== 'chef_service') {
+            abort(403);
+        }
+        
         $request->validate([
             'commentaire' => 'nullable|string|max:1000'
         ]);
         
-        try {
-            $parapheur = Parapheur::findOrFail($id);
-            
-            // Seul le créateur ou le responsable peut transmettre
-            if (!in_array(auth()->id(), [$parapheur->createur_id, $parapheur->responsable_actuel_id])) {
-                throw new \Exception('Action non autorisée.');
-            }
-            
-            DB::beginTransaction();
-            
-            // Pour l'instant, simple transmission au responsable suivant
-            $prochainResponsable = $this->getProchainResponsable($parapheur, $parapheur->etape_actuelle);
-            
-            $parapheur->update([
-                'responsable_actuel_id' => $prochainResponsable,
-                'statut' => 'en_cours'
-            ]);
-            
-            $details = "Transmis à l'étape suivante" . 
-                      ($request->commentaire ? " - " . $request->commentaire : "");
-            
-            $this->creerHistorique($parapheur, 'transmission', $details, auth()->id());
-            
-            DB::commit();
-            
-            return back()->with('success', 'Parapheur transmis avec succès.');
-            
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return back()->with('error', 'Erreur: ' . $e->getMessage());
-        }
-    }
-    
-    /**
-     * Joindre un fichier
-     */
-    public function joindreFichier(Request $request, $id)
-    {
-        $request->validate([
-            'fichier' => 'required|file|max:10240|mimes:pdf,doc,docx,xls,xlsx,jpg,png',
-            'commentaire' => 'nullable|string|max:500'
+        $statutValideCS = ParapheurStatut::where('code', 'valide_cs')->first();
+        
+        $parapheur->update([
+            'statut_id' => $statutValideCS->id,
         ]);
         
-        try {
-            $parapheur = Parapheur::findOrFail($id);
-            
-            // Vérifier permissions
-            $this->authorizeView($parapheur);
-            
-            DB::beginTransaction();
-            
-            $fichier = $this->stockerFichier($parapheur, $request->file('fichier'), $request->commentaire);
-            
-            $details = "Fichier joint: " . $fichier->nom_original . 
-                      ($request->commentaire ? " - " . $request->commentaire : "");
-            
-            $this->creerHistorique($parapheur, 'ajout_fichier', $details, auth()->id());
-            
-            DB::commit();
-            
-            return back()->with('success', 'Fichier joint avec succès.');
-            
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return back()->with('error', 'Erreur: ' . $e->getMessage());
-        }
+        ParapheurHistorique::create([
+            'parapheur_id' => $parapheur->id,
+            'user_id' => Auth::id(),
+            'action' => 'Validé par Chef Service',
+            'ancien_statut_id' => $parapheur->statut_id,
+            'nouveau_statut_id' => $statutValideCS->id,
+            'commentaire' => $request->commentaire ?? 'Validation du Chef de Service'
+        ]);
+        
+        return redirect()->route('parapheurs.show', $parapheur)
+            ->with('success', 'Parapheur validé par le Chef de Service.');
     }
     
-    /**
-     * Télécharger un fichier
-     */
-    public function telechargerFichier($fichierId)
+    public function transmettreDirecteur(Request $request, Parapheur $parapheur)
     {
-        try {
-            // À implémenter avec ton modèle de fichiers
-            throw new \Exception('Fonctionnalité à implémenter');
-            
-        } catch (\Exception $e) {
-            return back()->with('error', 'Erreur: ' . $e->getMessage());
+        if (Auth::user()->role->name !== 'chef_service') {
+            abort(403);
         }
+        
+        $request->validate([
+            'commentaire' => 'nullable|string|max:1000'
+        ]);
+        
+        $statutAttenteSignature = ParapheurStatut::where('code', 'attente_signature')->first();
+        $roleDirecteur = DB::table('roles')->where('name', 'directeur')->first();
+        
+        $parapheur->update([
+            'statut_id' => $statutAttenteSignature->id,
+            'current_role_id' => $roleDirecteur->id,
+        ]);
+        
+        ParapheurHistorique::create([
+            'parapheur_id' => $parapheur->id,
+            'user_id' => Auth::id(),
+            'action' => 'Transmis au Directeur',
+            'ancien_statut_id' => $parapheur->statut_id,
+            'nouveau_statut_id' => $statutAttenteSignature->id,
+            'commentaire' => $request->commentaire ?? 'Transmis pour signature'
+        ]);
+        
+        return redirect()->route('parapheurs.show', $parapheur)
+            ->with('success', 'Parapheur transmis au Directeur pour signature.');
+    }
+    
+    public function rejeterVersAgent(Request $request, Parapheur $parapheur)
+    {
+        if (Auth::user()->role->name !== 'chef_service') {
+            abort(403);
+        }
+        
+        $request->validate([
+            'motif' => 'required|string|max:1000'
+        ]);
+        
+        $statutRejete = ParapheurStatut::where('code', 'rejete')->first();
+        $roleAgent = DB::table('roles')->where('name', 'agent')->first();
+        
+        $parapheur->update([
+            'statut_id' => $statutRejete->id,
+            'current_role_id' => $roleAgent->id,
+        ]);
+        
+        ParapheurHistorique::create([
+            'parapheur_id' => $parapheur->id,
+            'user_id' => Auth::id(),
+            'action' => 'Rejeté vers agent',
+            'ancien_statut_id' => $parapheur->statut_id,
+            'nouveau_statut_id' => $statutRejete->id,
+            'commentaire' => 'Motif: ' . $request->motif
+        ]);
+        
+        return redirect()->route('parapheurs.show', $parapheur)
+            ->with('warning', 'Parapheur rejeté vers l\'agent pour correction.');
     }
 
-    // =========================================================================
-    // ACTIONS SUPERADMIN
-    // =========================================================================
-    
     /**
-     * Réassigner un parapheur
+     * VUE DIRECTEUR
      */
-    public function reassign(Request $request, $id)
+    public function vueDirecteur()
     {
-        // Vérifier superadmin
-        if (!auth()->user()->hasRole('superadmin')) {
-            abort(403, 'Action réservée au superadmin.');
+        $statutAttenteSignature = ParapheurStatut::where('code', 'attente_signature')->first();
+        
+        $parapheurs = Parapheur::with(['statut', 'typeCourrier', 'createur'])
+            ->where('statut_id', $statutAttenteSignature->id)
+            ->orderBy('date_limite')
+            ->paginate(20);
+        
+        return view('parapheurs.directeur', compact('parapheurs'));
+    }
+    
+    public function aSigner()
+    {
+        $statutAttenteSignature = ParapheurStatut::where('code', 'attente_signature')->first();
+        
+        $parapheurs = Parapheur::with(['typeCourrier', 'createur'])
+            ->where('statut_id', $statutAttenteSignature->id)
+            ->orderBy('date_limite')
+            ->paginate(20);
+        
+        return view('parapheurs.a-signer', compact('parapheurs'));
+    }
+    
+    public function signer(Request $request, Parapheur $parapheur)
+    {
+        if (Auth::user()->role->name !== 'directeur') {
+            abort(403);
         }
         
         $request->validate([
-            'nouveau_responsable_id' => 'required|exists:users,id',
-            'motif' => 'required|string|min:10|max:1000'
+            'commentaire' => 'nullable|string|max:1000'
         ]);
         
-        try {
-            $parapheur = Parapheur::findOrFail($id);
-            
-            DB::beginTransaction();
-            
-            $ancienResponsable = $parapheur->responsable_actuel_id;
-            $parapheur->update(['responsable_actuel_id' => $request->nouveau_responsable_id]);
-            
-            $details = "Réassigné de #$ancienResponsable à #" . $request->nouveau_responsable_id . 
-                      " - Motif: " . $request->motif;
-            
-            $this->creerHistorique($parapheur, 'reassignation_admin', $details, auth()->id());
-            
-            DB::commit();
-            
-            return back()->with('success', 'Parapheur réassigné avec succès.');
-            
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return back()->with('error', 'Erreur: ' . $e->getMessage());
-        }
+        $statutSigne = ParapheurStatut::where('code', 'signe')->first();
+        
+        $parapheur->update([
+            'statut_id' => $statutSigne->id,
+            'current_role_id' => null, // Plus personne en charge
+        ]);
+        
+        ParapheurHistorique::create([
+            'parapheur_id' => $parapheur->id,
+            'user_id' => Auth::id(),
+            'action' => 'Signé par le Directeur',
+            'ancien_statut_id' => $parapheur->statut_id,
+            'nouveau_statut_id' => $statutSigne->id,
+            'commentaire' => $request->commentaire ?? 'Signature du Directeur'
+        ]);
+        
+        return redirect()->route('parapheurs.show', $parapheur)
+            ->with('success', 'Parapheur signé avec succès !');
     }
     
-    /**
-     * Forcer l'étape
-     */
-    public function forcerEtape(Request $request, $id)
+    public function rejeterExceptionnel(Request $request, Parapheur $parapheur)
     {
-        // Vérifier superadmin
-        if (!auth()->user()->hasRole('superadmin')) {
-            abort(403, 'Action réservée au superadmin.');
+        if (Auth::user()->role->name !== 'directeur') {
+            abort(403);
         }
         
         $request->validate([
-            'nouvelle_etape' => 'required|integer|min:1|max:10',
-            'justification' => 'required|string|min:20|max:1000'
+            'motif' => 'required|string|max:1000'
         ]);
         
-        try {
-            $parapheur = Parapheur::findOrFail($id);
-            
-            DB::beginTransaction();
-            
-            $ancienneEtape = $parapheur->etape_actuelle;
-            $parapheur->update(['etape_actuelle' => $request->nouvelle_etape]);
-            
-            $details = "Étape forcée de $ancienneEtape à " . $request->nouvelle_etape . 
-                      " - Justification: " . $request->justification;
-            
-            $this->creerHistorique($parapheur, 'force_etape_admin', $details, auth()->id());
-            
-            DB::commit();
-            
-            return back()->with('success', 'Étape forcée avec succès.');
-            
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return back()->with('error', 'Erreur: ' . $e->getMessage());
-        }
-    }
-    
-    /**
-     * Archiver un parapheur
-     */
-    public function archiver($id)
-    {
-        // Vérifier superadmin
-        if (!auth()->user()->hasRole('superadmin')) {
-            abort(403, 'Action réservée au superadmin.');
-        }
+        $statutRejete = ParapheurStatut::where('code', 'rejete')->first();
+        $roleSecretaire = DB::table('roles')->where('name', 'secretaire')->first();
         
-        try {
-            $parapheur = Parapheur::findOrFail($id);
-            
-            $parapheur->update(['statut' => 'archive']);
-            
-            $this->creerHistorique($parapheur, 'archivage_admin', 'Archivé par superadmin', auth()->id());
-            
-            return back()->with('success', 'Parapheur archivé.');
-            
-        } catch (\Exception $e) {
-            return back()->with('error', 'Erreur: ' . $e->getMessage());
-        }
+        $parapheur->update([
+            'statut_id' => $statutRejete->id,
+            'current_role_id' => $roleSecretaire->id,
+        ]);
+        
+        ParapheurHistorique::create([
+            'parapheur_id' => $parapheur->id,
+            'user_id' => Auth::id(),
+            'action' => 'Rejeté exceptionnellement par le Directeur',
+            'ancien_statut_id' => $parapheur->statut_id,
+            'nouveau_statut_id' => $statutRejete->id,
+            'commentaire' => 'Motif (Directeur): ' . $request->motif
+        ]);
+        
+        return redirect()->route('parapheurs.show', $parapheur)
+            ->with('warning', 'Parapheur rejeté exceptionnellement.');
     }
 
-    // =========================================================================
-    // MÉTHODES PRIVÉES
-    // =========================================================================
-    
     /**
-     * Générer une référence unique
+     * VUE SUPERVISION (Superadmin/Admin)
      */
-    private function genererReference()
+    public function supervision()
     {
-        $annee = date('Y');
-        $prefixe = 'GDF';
+        $parapheurs = Parapheur::with(['statut', 'typeCourrier', 'createur', 'currentRole'])
+            ->orderBy('date_limite')
+            ->paginate(30);
         
-        // Chercher le dernier numéro de l'année
-        $dernier = Parapheur::where('reference', 'LIKE', "{$prefixe}-{$annee}-%")
-                           ->orderBy('reference', 'desc')
-                           ->first();
-        
-        if ($dernier && preg_match('/-(\d+)$/', $dernier->reference, $matches)) {
-            $numero = intval($matches[1]) + 1;
-        } else {
-            $numero = 1;
-        }
-        
-        return sprintf('%s-%s-%05d', $prefixe, $annee, $numero);
-    }
-    
-    /**
-     * Déterminer le responsable initial
-     */
-    private function getResponsableInitial($serviceId, $directionId)
-    {
-        // Par défaut: chef du service
-        $service = Service::find($serviceId);
-        
-        if ($service && $service->chef_id) {
-            return $service->chef_id;
-        }
-        
-        // Sinon: directeur de la direction
-        $direction = Direction::find($directionId);
-        
-        if ($direction && $direction->directeur_id) {
-            return $direction->directeur_id;
-        }
-        
-        // Par défaut: l'utilisateur connecté
-        return auth()->id();
-    }
-    
-    /**
-     * Déterminer le prochain responsable
-     */
-    private function getProchainResponsable($parapheur, $etape)
-    {
-        // Workflow simple:
-        // Étape 1: Chef de service (déjà fait à la création)
-        // Étape 2: Directeur
-        // Étape 3: Finalisé (pas de responsable)
-        
-        if ($etape == 2) {
-            // Directeur de la direction
-            $direction = Direction::find($parapheur->direction_id);
-            return $direction->directeur_id ?? null;
-        }
-        
-        // Dernière étape ou inconnue
-        return null;
-    }
-    
-    /**
-     * Stocker un fichier
-     */
-    private function stockerFichier($parapheur, $fichier, $commentaire = null)
-    {
-        $path = $fichier->store('parapheurs/' . $parapheur->id, 'public');
-        
-        // À adapter selon ton modèle de fichiers
-        return $parapheur->fichiers()->create([
-            'nom_original' => $fichier->getClientOriginalName(),
-            'nom_stockage' => $fichier->hashName(),
-            'chemin' => $path,
-            'taille' => $fichier->getSize(),
-            'type_mime' => $fichier->getMimeType(),
-            'extension' => $fichier->getClientOriginalExtension(),
-            'uploader_id' => auth()->id(),
-            'commentaire' => $commentaire
-        ]);
-    }
-    
-    /**
-     * Créer un historique
-     */
-    private function creerHistorique($parapheur, $action, $details, $userId)
-    {
-        // À adapter selon ton modèle d'historique
-        return $parapheur->historiques()->create([
-            'action' => $action,
-            'details' => $details,
-            'user_id' => $userId,
-            'ip_address' => request()->ip()
-        ]);
-    }
-    
-    /**
-     * Autorisation pour voir
-     */
-    private function authorizeView($parapheur)
-    {
-        $user = auth()->user();
-        
-        // Superadmin peut tout voir
-        if ($user->hasRole('superadmin')) {
-            return true;
-        }
-        
-        // Directeur peut voir sa direction
-        if ($user->hasRole('directeur') && 
-            $parapheur->direction_id == $user->direction_id) {
-            return true;
-        }
-        
-        // Chef de service peut voir son service
-        if (($user->hasRole('chef_service') || $user->hasRole('chef')) && 
-            $parapheur->service_id == $user->service_id) {
-            return true;
-        }
-        
-        // Créateur ou responsable actuel peut voir
-        if ($parapheur->createur_id == $user->id || 
-            $parapheur->responsable_actuel_id == $user->id) {
-            return true;
-        }
-        
-        abort(403, 'Vous n\'avez pas accès à ce parapheur.');
-    }
-    
-    /**
-     * Autorisation pour modifier
-     */
-    private function authorizeEdit($parapheur)
-    {
-        $user = auth()->user();
-        
-        // Seul le créateur peut modifier (si en attente)
-        if ($parapheur->createur_id !== $user->id || 
-            !in_array($parapheur->statut, ['brouillon', 'en_attente'])) {
-            abort(403, 'Vous ne pouvez pas modifier ce parapheur.');
-        }
-        
-        return true;
-    }
-    
-    /**
-     * Données de test
-     */
-    private function getDonneesTest()
-    {
-        return collect([
-            (object)[
-                'id' => 1,
-                'reference' => 'GDF-2024-00127',
-                'objet' => 'Demande d\'exonération fiscale - Société ABC',
-                'description' => 'Demande complète d\'exonération pour investissement',
-                'statut' => 'en_attente',
-                'priorite' => 'urgente',
-                'confidentialite' => 'standard',
-                'date_creation' => now()->subDays(2),
-                'date_echeance' => now()->addDays(5),
-                'createur_id' => 1,
-                'service_id' => 1,
-                'direction_id' => 1,
-                'responsable_actuel_id' => 1,
-                'etape_actuelle' => 1,
-                'etapes_total' => 3,
-                'created_at' => now()->subDays(2),
-                'updated_at' => now()->subDays(1)
-            ],
-            (object)[
-                'id' => 2,
-                'reference' => 'GDF-2024-00126',
-                'objet' => 'Dispense de TVA - Projet X',
-                'description' => 'Demande de dispense de TVA pour projet d\'investissement',
-                'statut' => 'valide',
-                'priorite' => 'normale',
-                'confidentialite' => 'standard',
-                'date_creation' => now()->subDays(5),
-                'date_echeance' => now()->addDays(2),
-                'createur_id' => 1,
-                'service_id' => 2,
-                'direction_id' => 1,
-                'responsable_actuel_id' => null,
-                'etape_actuelle' => 3,
-                'etapes_total' => 3,
-                'created_at' => now()->subDays(5),
-                'updated_at' => now()->subDays(2)
-            ]
-        ]);
-    }
-    
-    /**
-     * Parapheur de test
-     */
-    private function getParapheurTest($id)
-    {
-        return (object)[
-            'id' => $id,
-            'reference' => 'GDF-2024-' . str_pad($id, 5, '0', STR_PAD_LEFT),
-            'objet' => 'Parapheur de test #' . $id,
-            'description' => 'Ceci est un parapheur de démonstration',
-            'statut' => 'en_attente',
-            'priorite' => 'normale',
-            'confidentialite' => 'standard',
-            'date_creation' => now()->subDays(3),
-            'date_echeance' => now()->addDays(7),
-            'createur' => (object)['name' => auth()->user()->name],
-            'service' => (object)['nom' => 'Service test'],
-            'direction' => (object)['nom' => 'Direction test'],
-            'responsableActuel' => (object)['name' => auth()->user()->name],
-            'etape_actuelle' => 1,
-            'etapes_total' => 3,
-            'created_at' => now()->subDays(3),
-            'updated_at' => now()->subDays(1)
+        $stats = [
+            'total' => Parapheur::count(),
+            'par_statut' => DB::table('parapheurs')
+                ->join('parapheur_statuts', 'parapheurs.statut_id', '=', 'parapheur_statuts.id')
+                ->select('parapheur_statuts.nom', DB::raw('count(*) as total'))
+                ->groupBy('parapheur_statuts.nom')
+                ->get(),
         ];
+        
+        return view('parapheurs.supervision', compact('parapheurs', 'stats'));
+    }
+    
+    public function historique(Parapheur $parapheur)
+    {
+        $historique = ParapheurHistorique::with(['user', 'ancienStatut', 'nouveauStatut'])
+            ->where('parapheur_id', $parapheur->id)
+            ->orderBy('created_at', 'desc')
+            ->get();
+        
+        return view('parapheurs.historique', compact('parapheur', 'historique'));
+    }
+    
+    public function archiver(Parapheur $parapheur)
+    {
+        $statutArchive = ParapheurStatut::where('code', 'archive')->first();
+        
+        $parapheur->update([
+            'statut_id' => $statutArchive->id,
+            'current_role_id' => null,
+        ]);
+        
+        ParapheurHistorique::create([
+            'parapheur_id' => $parapheur->id,
+            'user_id' => Auth::id(),
+            'action' => 'Archivé',
+            'ancien_statut_id' => $parapheur->statut_id,
+            'nouveau_statut_id' => $statutArchive->id,
+            'commentaire' => 'Archivage manuel par l\'administrateur'
+        ]);
+        
+        return redirect()->route('parapheurs.supervision')
+            ->with('success', 'Parapheur archivé avec succès.');
+    }
+
+    /**
+     * ROUTES COMMUNES
+     */
+    public function show(Parapheur $parapheur)
+    {
+        // Vérifier les permissions
+        $user = Auth::user();
+        $peutVoir = $this->verifierPermissionVoir($user, $parapheur);
+        
+        if (!$peutVoir) {
+            abort(403, 'Vous n\'avez pas accès à ce parapheur.');
+        }
+        
+        $parapheur->load(['statut', 'typeCourrier', 'createur', 'currentRole', 'fichiers']);
+        $historique = ParapheurHistorique::with(['user', 'ancienStatut', 'nouveauStatut'])
+            ->where('parapheur_id', $parapheur->id)
+            ->orderBy('created_at', 'desc')
+            ->limit(10)
+            ->get();
+        
+        // Récupérer les actions possibles pour cet utilisateur
+        $actionsPossibles = $this->getActionsPossibles($user, $parapheur);
+        
+        return view('parapheurs.show', compact('parapheur', 'historique', 'actionsPossibles'));
+    }
+    
+    public function edit(Parapheur $parapheur)
+    {
+        // Seul le créateur peut éditer si statut "créé" ou "rejeté"
+        if (Auth::id() !== $parapheur->created_by || 
+            !in_array($parapheur->statut->code, ['creer', 'rejete'])) {
+            abort(403);
+        }
+        
+        $types = TypeCourrier::where('actif', true)->get();
+        return view('parapheurs.edit', compact('parapheur', 'types'));
+    }
+    
+    public function update(Request $request, Parapheur $parapheur)
+    {
+        // Vérification des permissions
+        if (Auth::id() !== $parapheur->created_by || 
+            !in_array($parapheur->statut->code, ['creer', 'rejete'])) {
+            abort(403);
+        }
+        
+        $request->validate([
+            'objet' => 'required|string|max:500',
+            'type_courrier_id' => 'required|exists:type_courriers,id',
+            'expediteur' => 'required|string|max:255',
+            'service_expediteur' => 'required|string|max:255',
+            'date_reception' => 'required|date',
+            'date_limite' => 'required|date|after_or_equal:date_reception',
+            'priorite' => 'required|in:bas,normal,urgent',
+        ]);
+        
+        $parapheur->update($request->only([
+            'objet', 'type_courrier_id', 'expediteur', 
+            'service_expediteur', 'date_reception', 'date_limite', 'priorite'
+        ]));
+        
+        ParapheurHistorique::create([
+            'parapheur_id' => $parapheur->id,
+            'user_id' => Auth::id(),
+            'action' => 'Modification',
+            'commentaire' => 'Parapheur modifié par le créateur'
+        ]);
+        
+        return redirect()->route('parapheurs.show', $parapheur)
+            ->with('success', 'Parapheur mis à jour avec succès.');
+    }
+
+    /**
+     * MÉTHODES PRIVÉES
+     */
+    private function verifierPermissionVoir($user, $parapheur)
+    {
+        $roleName = $user->role->name;
+        
+        // Superadmin/Admin voit tout
+        if (in_array($roleName, ['superadmin', 'admin'])) {
+            return true;
+        }
+        
+        // Le créateur voit toujours son parapheur
+        if ($parapheur->created_by === $user->id) {
+            return true;
+        }
+        
+        // Vérification par rôle et statut
+        $statutCode = $parapheur->statut->code;
+        
+        switch ($roleName) {
+            case 'secretaire':
+                return in_array($statutCode, ['creer', 'rejete']);
+            case 'agent':
+            case 'gestionnaire':
+                return $statutCode === 'analyse';
+            case 'chef_service':
+                return in_array($statutCode, ['attente_validation', 'valide_cs']);
+            case 'directeur':
+                return $statutCode === 'attente_signature';
+            default:
+                return false;
+        }
+    }
+    
+    private function getActionsPossibles($user, $parapheur)
+    {
+        $roleName = $user->role->name;
+        $statutCode = $parapheur->statut->code;
+        $actions = [];
+        
+        // Vérifier les transitions autorisées
+        $transitions = DB::table('parapheur_transitions as t')
+            ->join('parapheur_statuts as s', 't.statut_source_id', '=', 's.id')
+            ->join('parapheur_statuts as c', 't.statut_cible_id', '=', 'c.id')
+            ->join('roles as r', 't.role_id', '=', 'r.id')
+            ->where('s.code', $statutCode)
+            ->where('r.name', $roleName)
+            ->select('c.code as statut_cible', 't.action')
+            ->get();
+        
+        foreach ($transitions as $transition) {
+            $actions[$transition->statut_cible] = $transition->action;
+        }
+        
+        // Actions supplémentaires
+        if ($user->id === $parapheur->created_by && in_array($statutCode, ['creer', 'rejete'])) {
+            $actions['edit'] = 'Modifier';
+        }
+        
+        // Superadmin peut archiver
+        if ($roleName === 'superadmin' && $statutCode !== 'archive') {
+            $actions['archive'] = 'Archiver';
+        }
+        
+        return $actions;
     }
 }

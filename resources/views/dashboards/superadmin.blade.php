@@ -7,6 +7,8 @@
     
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome pour les icônes -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
     <!-- Alpine.js CDN -->
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
@@ -114,10 +116,10 @@
                         
                         <!-- Navigation -->
                         <div class="flex items-center">
-                            <a href="#" class="nav-item active">Tableau de bord</a>
-                            <a href="#" class="nav-item">Parapheurs</a>
-                            <a href="#" class="nav-item">Statistiques</a>
-                            <a href="#" class="nav-item">Administration</a>
+                            <a href="/tableau de bord" class="nav-item active">Tableau de bord</a>
+                            <a href="/parapheurs" class="nav-item">Parapheurs</a>
+                            <a href="/statistiques" class="nav-item">Statistiques</a>
+                            <a href="/Adlinistration" class="nav-item">Administration</a>
                         </div>
                     </div>
                     
@@ -216,6 +218,7 @@
                 <p class="text-xs text-green-600 mt-2">-0,3 jour</p>
             </div>
         </div>
+        
 
         <!-- Section informations essentielles -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
