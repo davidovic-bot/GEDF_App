@@ -116,10 +116,11 @@
                         
                         <!-- Navigation -->
                         <div class="flex items-center">
-                            <a href="/tableau de bord" class="nav-item active">Tableau de bord</a>
+                            <a href="/courriers" class="nav-item">Courriers</a>
                             <a href="/parapheurs" class="nav-item">Parapheurs</a>
+                            <a href="/tableau de bord" class="nav-item active">Suivi et tableau de bord</a>
+                            <a href="/Administration" class="nav-item">Administration</a>
                             <a href="/statistiques" class="nav-item">Statistiques</a>
-                            <a href="/Adlinistration" class="nav-item">Administration</a>
                         </div>
                     </div>
                     
@@ -157,7 +158,7 @@
         <!-- Titre Dashboard -->
         <div class="mb-8">
             <h1 class="text-2xl font-bold text-gray-900">Tableau de bord GDF</h1>
-            <p class="text-gray-600 mt-1">Supervision complète du système de gestion électronique des parapheurs</p>
+            <p class="text-gray-600 mt-1">Supervision complète du système de Gestion des Dépenses Fiscales via courriers et parapheurs électronique</p>
             
             <!-- Indicateurs rapides -->
             <div class="mt-4 flex flex-wrap gap-3">
@@ -276,7 +277,7 @@
     <footer class="mt-10 border-t border-gray-200 py-4">
         <div class="container mx-auto px-6 text-center">
             <p class="text-sm text-gray-600">
-                © 2024 Direction Générale des Impôts - République du Gabon • Système GDF v2.1.0
+                © 2025 Direction Générale des Impôts - République Gabonaise • Système GDF v2.1.0
             </p>
         </div>
     </footer>

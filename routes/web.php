@@ -70,6 +70,20 @@ Route::middleware(['auth', 'isdirecteur'])->get('/dashboard/directeur', function
 })->name('dashboard.directeur');
 
 // =============================================================================
+// MODULE COURRIERS
+// =============================================================================
+
+// Route pour le module Courrier (Superadmin uniquement)
+Route::middleware(['auth', 'issuperadmin'])->get('/courriers', function () {
+    return "<h1 style='padding: 20px;'>📨 Module Courriers Superadmin</h1>
+            <div style='padding: 20px; background: #f8f9fa; border-radius: 10px;'>
+                <p>Module fonctionnel !</p>
+                <p><a href='/dashboard/superadmin'>← Retour au tableau de bord</a></p>
+            </div>";
+})->name('courriers');
+
+
+// =============================================================================
 // MODULE PARAPHEURS - ORDRE CORRECT : SPÉCIFIQUE → GÉNÉRIQUE
 // =============================================================================
 
@@ -165,6 +179,8 @@ Route::middleware(['auth', 'issuperadmin'])->prefix('administration')->group(fun
 Route::middleware(['auth', 'issuperadmin'])->prefix('statistiques')->group(function () {
     Route::get('/', [StatistiqueController::class, 'index'])->name('statistiques.index');
 });
+
+
 
 // Fallback
 Route::fallback(function () {

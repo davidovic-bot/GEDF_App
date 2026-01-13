@@ -66,16 +66,6 @@
                 </div>
                 
                 <div class="mt-4">
-                    <h5>🔄 Prochaines étapes :</h5>
-                    <ol>
-                        <li>Développer les interfaces par rôle</li>
-                        <li>Implémenter les actions de workflow</li>
-                        <li>Tester avec différents utilisateurs</li>
-                        <li>Ajouter la gestion des fichiers joints</li>
-                    </ol>
-                </div>
-                
-                <div class="mt-4">
                     <a href="{{ route('dashboard.superadmin') }}" class="btn btn-primary">
                         ← Retour au tableau de bord
                     </a>
