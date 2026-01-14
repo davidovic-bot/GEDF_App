@@ -141,4 +141,22 @@ class Courrier extends Model
             default => 'light'
         };
     }
+
+    public function parapheurs(): HasMany
+{
+    return $this->hasMany(Parapheur::class);
+}
+
+// Relation avec les fichiers de parapheur
+public function fichiersParapheur(): HasMany
+{
+    return $this->hasManyThrough(
+        FichierParapheur::class,
+        Parapheur::class,
+        'courrier_id', // Clé étrangère sur parapheurs
+        'parapheur_id', // Clé étrangère sur fichier_parapheurs
+        'id', // Clé locale sur courriers
+        'id' // Clé locale sur parapheurs
+    );
+}
 }

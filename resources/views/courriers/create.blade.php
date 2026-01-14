@@ -385,7 +385,7 @@
                                     <div class="d-flex justify-content-between mt-2">
                                         <small class="text-muted">
                                             <i class="fas fa-lightbulb me-1"></i>
-                                            Soyez précis et citez les articles de loi applicables
+                                            Soyez précis et citez les articles de lois applicables
                                         </small>
                                         <small class="text-muted" id="char-count">0 caractères</small>
                                     </div>
