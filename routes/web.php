@@ -11,9 +11,6 @@ Route::get('/', function () {
     return view('auth.login');
 });
 
-// Authentification Breeze
-require __DIR__.'/auth.php';
-
 // =============================================================================
 // DASHBOARDS PAR RÔLE
 // =============================================================================
@@ -69,6 +66,10 @@ Route::middleware(['auth', 'isdirecteur'])->get('/dashboard/directeur', function
     return view('dashboards.directeur', compact('parapheursASigner'));
 })->name('dashboard.directeur');
 
+// Authentification Breeze
+require __DIR__.'/auth.php';
+
+
 // =============================================================================
 // MODULE COURRIERS
 // =============================================================================
@@ -81,6 +82,33 @@ Route::middleware(['auth', 'issuperadmin'])->get('/courriers', function () {
                 <p><a href='/dashboard/superadmin'>← Retour au tableau de bord</a></p>
             </div>";
 })->name('courriers');
+
+// Après les routes d'authentification de Breeze
+Route::middleware(['auth'])->group(function () {
+    // Dashboard
+    Route::get('/dashboard', function () {
+        return view('dashboard');
+    })->name('dashboard');
+    
+    // Module Courrier - Routes principales
+    Route::prefix('courriers')->name('courriers.')->group(function () {
+        Route::get('/', [CourrierController::class, 'index'])->name('index');
+        Route::get('/enregistrer', [CourrierController::class, 'enregistrer'])->name('enregistrer');
+        Route::post('/', [CourrierController::class, 'store'])->name('store');
+        Route::get('/{courrier}', [CourrierController::class, 'show'])->name('show');
+        Route::get('/{courrier}/edit', [CourrierController::class, 'edit'])->name('edit');
+        Route::put('/{courrier}', [CourrierController::class, 'update'])->name('update');
+        Route::delete('/{courrier}', [CourrierController::class, 'destroy'])->name('destroy');
+        
+        // Routes spécifiques au métier
+        Route::post('/{courrier}/attribuer', [CourrierController::class, 'attribuer'])->name('attribuer');
+        Route::post('/{courrier}/upload-document', [CourrierController::class, 'uploadDocument'])->name('upload-document');
+        Route::get('/{courrier}/historique', [CourrierController::class, 'historique'])->name('historique');
+        Route::post('/{courrier}/changer-statut', [CourrierController::class, 'changerStatut'])->name('changer-statut');
+        Route::post('/{courrier}/deposer-parapheur', [CourrierController::class, 'deposerParapheur'])->name('deposer-parapheur');
+    });
+});
+
 
 
 // =============================================================================
@@ -179,7 +207,6 @@ Route::middleware(['auth', 'issuperadmin'])->prefix('administration')->group(fun
 Route::middleware(['auth', 'issuperadmin'])->prefix('statistiques')->group(function () {
     Route::get('/', [StatistiqueController::class, 'index'])->name('statistiques.index');
 });
-
 
 
 // Fallback
