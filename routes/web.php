@@ -1,5 +1,6 @@
 <?php
 
+use App\http\Controllers\CourrierController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\ParapheurController;
