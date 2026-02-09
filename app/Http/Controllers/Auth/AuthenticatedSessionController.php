@@ -42,31 +42,45 @@ class AuthenticatedSessionController extends Controller
         // Récupérer l'utilisateur connecté
         $user = Auth::user();
 
-        // 🔥 Redirection selon le rôle
-        switch ($user->role_id) {
-
-            case 1:
-                return redirect('/dashboard/superadmin');
-
-            case 2:
-                return redirect('/dashboard/admin');
-
-            case 3:
-                return redirect('/dashboard/secretaires');
-
-            case 4:
-                return redirect('/dashboard/gestionnaire');
-
-            case 5:
-                return redirect('/dashboard/chef-service');
-
-            case 6:
-                return redirect('/dashboard/directeur');
-
-            default:
-                Auth::logout();
-                abort(403, 'Rôle inconnu');
+        // 🔥 REDIRECTION SIMPLIFIÉE PAR EMAIL
+        // SUPERADMIN
+        if ($user->email === 'superadmin@gedf.com') {
+            return redirect('/superadmin');
         }
+        
+        // ADMIN
+        if ($user->email === 'admin@gedf.com') {
+            return redirect('/admin');
+        }
+        
+        // SECRÉTAIRE
+        if ($user->email === 'secretaire@gedf.com') {
+            return redirect('/secretaire');
+        }
+        
+        // GESTIONNAIRE
+        if ($user->email === 'gestionnaire@gedf.com') {
+            return redirect('/gestionnaire');
+        }
+        
+        // CHEF SERVICE
+        if ($user->email === 'chefservice@gedf.com') {
+            return redirect('/chef-service');
+        }
+        
+        // DIRECTEUR
+        if ($user->email === 'directeur@gedf.com') {
+            return redirect('/directeur');
+        }
+        
+        // CAREERINNS
+        if ($user->email === 'careerinns@gedf.com') {
+            // Redirige vers une page spécifique si tu en as une
+            return redirect('/dashboard');
+        }
+
+        // Par défaut : dashboard Breeze
+        return redirect('/dashboard');
     }
 
     /**

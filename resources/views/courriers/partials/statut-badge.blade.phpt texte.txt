@@ -1,0 +1,46 @@
+@switch($courrier->statut)
+    @case('enregistre')
+        <span class="badge bg-secondary">
+            <i class="fas fa-inbox me-1"></i> Enregistré
+        </span>
+        @break
+    @case('en_analyse')
+        <span class="badge bg-primary">
+            <i class="fas fa-search me-1"></i> En analyse
+        </span>
+        @break
+    @case('en_validation_chef')
+        <span class="badge bg-warning">
+            <i class="fas fa-user-tie me-1"></i> Chef Service
+        </span>
+        @break
+    @case('en_validation_directeur')
+        <span class="badge bg-warning">
+            <i class="fas fa-user-tie me-1"></i> Directeur
+        </span>
+        @break
+    @case('en_signature_dg')
+        <span class="badge bg-info">
+            <i class="fas fa-signature me-1"></i> Signature DG
+        </span>
+        @break
+    @case('signe')
+        <span class="badge bg-success">
+            <i class="fas fa-check-circle me-1"></i> Signé
+        </span>
+        @break
+    @case('archive')
+        <span class="badge bg-dark">
+            <i class="fas fa-archive me-1"></i> Archivé
+        </span>
+        @break
+    @case('rejete')
+        <span class="badge bg-danger">
+            <i class="fas fa-times-circle me-1"></i> Rejeté
+        </span>
+        @break
+    @default
+        <span class="badge bg-light text-dark">
+            {{ $courrier->statut }}
+        </span>
+@endswitch

@@ -1,400 +1,329 @@
-{{-- resources/views/courriers/index.blade.php --}}
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dossiers Fiscaux - GDF</title>
-    
-    <!-- Bootstrap 5 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <style>
-        .stat-card {
-            border-left: 4px solid;
-            transition: transform 0.2s;
-        }
-        .stat-card:hover {
-            transform: translateY(-2px);
-        }
-        .stat-en-cours { border-left-color: #0d6efd; }
-        .stat-validation { border-left-color: #ffc107; }
-        .stat-retard { border-left-color: #dc3545; }
-        .stat-signe { border-left-color: #198754; }
-        
-        .badge-type {
-            font-size: 0.75em;
-            padding: 4px 8px;
-        }
-        .badge-exoneration { background-color: #e3f2fd; color: #1565c0; }
-        .badge-dispense_tva { background-color: #e8f5e9; color: #2e7d32; }
-        .badge-rejet { background-color: #ffebee; color: #c62828; }
-        
-        .badge-statut {
-            font-size: 0.8em;
-            padding: 4px 10px;
-        }
-        .badge-en_analyse { background-color: #e3f2fd; color: #1565c0; }
-        .badge-en_validation { background-color: #fff3e0; color: #ef6c00; }
-        .badge-signe { background-color: #e8f5e9; color: #2e7d32; }
-        .badge-archive { background-color: #f5f5f5; color: #616161; }
-        
-        .retard-indicator {
-            animation: pulse 1.5s infinite;
-            color: #dc3545;
-        }
-        
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.5; }
-            100% { opacity: 1; }
-        }
-        
-        .table-hover tbody tr:hover {
-            background-color: rgba(13, 110, 253, 0.05);
-        }
-        
-        .action-buttons .btn {
-            padding: 3px 8px;
-            font-size: 0.875rem;
-        }
-    </style>
-</head>
-<body>
-    <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="#">
-                <i class="fas fa-landmark me-2"></i>
-                GDF - Gestion des Dossiers Fiscaux
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <a class="nav-link active" href="{{ route('courriers.index') }}">
-                            <i class="fas fa-folder-open me-1"></i> Dossiers
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ route('courriers.create') }}">
-                            <i class="fas fa-plus-circle me-1"></i> Nouveau
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ route('courriers.archives') }}">
-                            <i class="fas fa-archive me-1"></i> Archives
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#">
-                            <i class="fas fa-chart-bar me-1"></i> Statistiques
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#">
-                            <i class="fas fa-user me-1"></i> {{ Auth::user()->name ?? 'Utilisateur' }}
-                        </a>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </nav>
+@extends('layouts.app')
 
-    <div class="container-fluid">
-        <!-- En-tête -->
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <div>
-                <h1 class="h3 mb-2">
-                    <i class="fas fa-folder-open text-primary me-2"></i>
-                    Dossiers Fiscaux
-                </h1>
-                <p class="text-muted mb-0">
-                    Gestion des demandes d'exonération, dispense TVA et propositions de rejet
-                </p>
-            </div>
-            <div>
-                <a href="{{ route('courriers.create') }}" class="btn btn-primary btn-lg">
-                    <i class="fas fa-plus-circle me-2"></i>
-                    Nouveau dossier
-                </a>
-            </div>
-        </div>
-
-        <!-- Statistiques -->
-        <div class="row mb-4">
-            <div class="col-md-3">
-                <div class="card stat-card stat-en-cours">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <div class="flex-grow-1">
-                                <h6 class="text-muted mb-1">En cours</h6>
-                                <h4 class="mb-0">{{ $stats['en_cours'] ?? 0 }}</h4>
-                            </div>
-                            <div class="icon">
-                                <i class="fas fa-clock fa-2x text-primary"></i>
-                            </div>
-                        </div>
-                    </div>
+@section('content')
+<div class="container-fluid">
+    <!-- En-tête avec titre et statistiques -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-2">
+                        <i class="fas fa-envelope me-2"></i>
+                        📨 Module Courrier - Gestion des Dépenses Fiscales (GDF)
+                    </h1>
+                    <p class="text-muted mb-0">
+                        Traitement des demandes d'exonération ou de dispense de TVA - Direction des Régimes Spécifiques (DRS)
+                    </p>
                 </div>
-            </div>
-
-            <div class="col-md-3">
-                <div class="card stat-card stat-validation">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <div class="flex-grow-1">
-                                <h6 class="text-muted mb-1">En validation</h6>
-                                <h4 class="mb-0">{{ $stats['en_validation'] ?? 0 }}</h4>
-                            </div>
-                            <div class="icon">
-                                <i class="fas fa-user-check fa-2x text-warning"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-3">
-                <div class="card stat-card stat-retard">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <div class="flex-grow-1">
-                                <h6 class="text-muted mb-1">En retard</h6>
-                                <h4 class="mb-0">{{ $stats['en_retard'] ?? 0 }}</h4>
-                            </div>
-                            <div class="icon">
-                                <i class="fas fa-exclamation-triangle fa-2x text-danger"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-3">
-                <div class="card stat-card stat-signe">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <div class="flex-grow-1">
-                                <h6 class="text-muted mb-1">Signés</h6>
-                                <h4 class="mb-0">{{ $stats['signes'] ?? 0 }}</h4>
-                            </div>
-                            <div class="icon">
-                                <i class="fas fa-check-circle fa-2x text-success"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Filtres -->
-        <div class="card shadow-sm mb-4">
-            <div class="card-body">
-                <form method="GET" action="{{ route('courriers.index') }}" class="row g-3">
-                    <div class="col-md-3">
-                        <label for="type" class="form-label">Type de dossier</label>
-                        <select name="type" id="type" class="form-select">
-                            <option value="">Tous les types</option>
-                            @foreach($types ?? [] as $key => $label)
-                            <option value="{{ $key }}" {{ request('type') == $key ? 'selected' : '' }}>
-                                {{ $label }}
-                            </option>
-                            @endforeach
-                        </select>
-                    </div>
-
-                    <div class="col-md-3">
-                        <label for="statut" class="form-label">Statut</label>
-                        <select name="statut" id="statut" class="form-select">
-                            <option value="">Tous les statuts</option>
-                            @foreach($statuts ?? [] as $key => $label)
-                            <option value="{{ $key }}" {{ request('statut') == $key ? 'selected' : '' }}>
-                                {{ $label }}
-                            </option>
-                            @endforeach
-                        </select>
-                    </div>
-
-                    <div class="col-md-2">
-                        <label for="date_debut" class="form-label">Date début</label>
-                        <input type="date" name="date_debut" id="date_debut" 
-                               class="form-control" value="{{ request('date_debut') }}">
-                    </div>
-
-                    <div class="col-md-2">
-                        <label for="date_fin" class="form-label">Date fin</label>
-                        <input type="date" name="date_fin" id="date_fin" 
-                               class="form-control" value="{{ request('date_fin') }}">
-                    </div>
-
-                    <div class="col-md-2 d-flex align-items-end">
-                        <button type="submit" class="btn btn-primary w-100">
-                            <i class="fas fa-filter me-2"></i>Filtrer
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-        <!-- Tableau des dossiers -->
-        <div class="card shadow-sm">
-            <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">
-                    <i class="fas fa-list me-2"></i>
-                    Liste des dossiers
-                    <span class="badge bg-primary ms-2">{{ $courriers->total() ?? 0 }}</span>
-                </h5>
                 
-                <div class="d-flex align-items-center">
-                    @if(isset($courriers) && $courriers->total() > 0)
-                    <span class="me-3 text-muted small">
-                        Affichage {{ $courriers->firstItem() }}-{{ $courriers->lastItem() }} sur {{ $courriers->total() }}
-                    </span>
+                <!-- Boutons d'action -->
+                <div class="btn-group">
+                    @if(auth()->user()->hasRole(['secretaire', 'assistante', 'superadmin']))
+                    <a href="{{ route('courriers.create') }}" class="btn btn-primary">
+                        <i class="fas fa-plus-circle me-1"></i> Nouveau Courrier
+                    </a>
                     @endif
+                    
+                    <a href="{{ route('courriers.archives') }}" class="btn btn-secondary">
+                        <i class="fas fa-archive me-1"></i> Archives
+                    </a>
                 </div>
             </div>
-            
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th width="120">Référence</th>
-                                <th width="150">Type</th>
-                                <th>Contribuable / Sujet</th>
-                                <th width="120">Statut</th>
-                                <th width="120">Date limite</th>
-                                <th width="150">Créé le</th>
-                                <th width="100">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @if(isset($courriers) && $courriers->count() > 0)
-                                @foreach($courriers as $courrier)
-                                <tr class="{{ $courrier->est_en_retard ? 'table-warning' : '' }}">
-                                    <td>
-                                        <span class="fw-bold">{{ $courrier->reference }}</span>
-                                        @if($courrier->est_en_retard)
-                                        <span class="retard-indicator ms-1" title="En retard">
-                                            <i class="fas fa-exclamation-triangle"></i>
-                                        </span>
-                                        @endif
-                                    </td>
-                                    <td>
-                                        @php
-                                            $typeColors = [
-                                                'exoneration' => 'exoneration',
-                                                'dispense_tva' => 'dispense_tva',
-                                                'rejet' => 'rejet'
-                                            ];
-                                        @endphp
-                                        <span class="badge badge-type badge-{{ $typeColors[$courrier->type_dossier] ?? 'secondary' }}">
-                                            @if($courrier->type_dossier == 'exoneration')
-                                                <i class="fas fa-hand-holding-usd me-1"></i>
-                                            @elseif($courrier->type_dossier == 'dispense_tva')
-                                                <i class="fas fa-percent me-1"></i>
-                                            @else
-                                                <i class="fas fa-file-alt me-1"></i>
-                                            @endif
-                                            {{ $courrier->libelle_type ?? ucfirst($courrier->type_dossier) }}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <div class="fw-bold">{{ $courrier->contribuable_nom }}</div>
-                                        <small class="text-muted">{{ Str::limit($courrier->sujet, 60) }}</small>
-                                    </td>
-                                    <td>
-                                        <span class="badge badge-statut badge-{{ $courrier->statut }}">
-                                            {{ $courrier->libelle_statut ?? ucfirst($courrier->statut) }}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        @if($courrier->date_limite)
-                                        <span class="{{ $courrier->est_en_retard ? 'text-danger fw-bold' : '' }}">
-                                            {{ \Carbon\Carbon::parse($courrier->date_limite)->format('d/m/Y') }}
-                                        </span>
-                                        @else
-                                        <span class="text-muted">-</span>
-                                        @endif
-                                    </td>
-                                    <td>
-                                        <span title="{{ \Carbon\Carbon::parse($courrier->created_at)->format('d/m/Y H:i') }}">
-                                            {{ \Carbon\Carbon::parse($courrier->created_at)->format('d/m/Y') }}
-                                        </span>
-                                        <div class="small text-muted">
-                                            par {{ $courrier->createur->name ?? 'N/A' }}
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div class="action-buttons">
-                                            <a href="{{ route('courriers.show', $courrier) }}" 
-                                               class="btn btn-sm btn-outline-primary" 
-                                               title="Voir le dossier">
-                                                <i class="fas fa-eye"></i>
-                                            </a>
-                                            <a href="{{ route('courriers.edit', $courrier) }}" 
-                                               class="btn btn-sm btn-outline-secondary" 
-                                               title="Modifier">
-                                                <i class="fas fa-edit"></i>
-                                            </a>
-                                        </div>
-                                    </td>
-                                </tr>
-                                @endforeach
-                            @else
-                            <tr>
-                                <td colspan="7" class="text-center py-5">
-                                    <div class="py-5">
-                                        <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
-                                        <h5 class="text-muted">Aucun dossier trouvé</h5>
-                                        <p class="text-muted">Commencez par créer un nouveau dossier.</p>
-                                        <a href="{{ route('courriers.create') }}" class="btn btn-primary">
-                                            <i class="fas fa-plus-circle me-2"></i>Créer un dossier
-                                        </a>
-                                    </div>
-                                </td>
-                            </tr>
-                            @endif
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            
-            <!-- Pagination -->
-            @if(isset($courriers) && $courriers->hasPages())
-            <div class="card-footer bg-white">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div class="text-muted small">
-                        Page {{ $courriers->currentPage() }} sur {{ $courriers->lastPage() }}
-                    </div>
-                    <div>
-                        {{ $courriers->withQueryString()->links() }}
-                    </div>
-                </div>
-            </div>
-            @endif
         </div>
     </div>
 
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Auto-submit des filtres quand on change le type ou statut
-            document.getElementById('type')?.addEventListener('change', function() {
-                this.form.submit();
-            });
-            
-            document.getElementById('statut')?.addEventListener('change', function() {
-                this.form.submit();
-            });
-        });
-    </script>
-</body>
-</html>
+    <!-- Statistiques selon la procédure DRS -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-start-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs fw-bold text-primary text-uppercase mb-1">
+                                Enregistrés
+                            </div>
+                            <div class="h5 mb-0 fw-bold text-gray-800">
+                                {{ $stats['enregistres'] ?? 0 }}
+                            </div>
+                            <div class="text-xs text-muted">En attente de traitement</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-inbox fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-start-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs fw-bold text-warning text-uppercase mb-1">
+                                En Analyse
+                            </div>
+                            <div class="h5 mb-0 fw-bold text-gray-800">
+                                {{ $stats['en_analyse'] ?? 0 }}
+                            </div>
+                            <div class="text-xs text-muted">Par les agents</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-search fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-start-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs fw-bold text-info text-uppercase mb-1">
+                                En Validation
+                            </div>
+                            <div class="h5 mb-0 fw-bold text-gray-800">
+                                {{ $stats['en_validation'] ?? 0 }}
+                            </div>
+                            <div class="text-xs text-muted">Chef Service / Directeur</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-check-circle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-start-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs fw-bold text-success text-uppercase mb-1">
+                                Signés
+                            </div>
+                            <div class="h5 mb-0 fw-bold text-gray-800">
+                                {{ $stats['signes'] ?? 0 }}
+                            </div>
+                            <div class="text-xs text-muted">Traitement terminé</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-file-signature fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtres -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 fw-bold text-primary">
+                <i class="fas fa-filter me-1"></i> Filtres de recherche
+            </h6>
+        </div>
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label fw-bold">Type de demande</label>
+                    <select name="type_demande" class="form-select">
+                        <option value="">Tous les types</option>
+                        <option value="exoneration" {{ request('type_demande') == 'exoneration' ? 'selected' : '' }}>
+                            Exonération
+                        </option>
+                        <option value="dispense" {{ request('type_demande') == 'dispense' ? 'selected' : '' }}>
+                            Dispense
+                        </option>
+                        <option value="exoneration_ouverte" {{ request('type_demande') == 'exoneration_ouverte' ? 'selected' : '' }}>
+                            Exonération Ouverte
+                        </option>
+                        <option value="exoneration_fermee" {{ request('type_demande') == 'exoneration_fermee' ? 'selected' : '' }}>
+                            Exonération Fermée
+                        </option>
+                    </select>
+                </div>
+                
+                <div class="col-md-3">
+                    <label class="form-label fw-bold">Statut</label>
+                    <select name="statut" class="form-select">
+                        <option value="">Tous les statuts</option>
+                        <option value="enregistre" {{ request('statut') == 'enregistre' ? 'selected' : '' }}>
+                            Enregistré
+                        </option>
+                        <option value="en_analyse" {{ request('statut') == 'en_analyse' ? 'selected' : '' }}>
+                            En analyse
+                        </option>
+                        <option value="en_validation_chef" {{ request('statut') == 'en_validation_chef' ? 'selected' : '' }}>
+                            En validation chef
+                        </option>
+                        <option value="en_validation_directeur" {{ request('statut') == 'en_validation_directeur' ? 'selected' : '' }}>
+                            En validation directeur
+                        </option>
+                        <option value="en_signature_dg" {{ request('statut') == 'en_signature_dg' ? 'selected' : '' }}>
+                            En signature DG
+                        </option>
+                        <option value="signe" {{ request('statut') == 'signe' ? 'selected' : '' }}>
+                            Signé
+                        </option>
+                        <option value="archive" {{ request('statut') == 'archive' ? 'selected' : '' }}>
+                            Archivé
+                        </option>
+                        <option value="rejete" {{ request('statut') == 'rejete' ? 'selected' : '' }}>
+                            Rejeté
+                        </option>
+                    </select>
+                </div>
+                
+                <div class="col-md-3">
+                    <label class="form-label fw-bold">Période</label>
+                    <input type="date" name="date_debut" class="form-control" 
+                           value="{{ request('date_debut') }}"
+                           placeholder="Date début">
+                </div>
+                
+                <div class="col-md-3">
+                    <label class="form-label fw-bold">&nbsp;</label>
+                    <input type="date" name="date_fin" class="form-control" 
+                           value="{{ request('date_fin') }}"
+                           placeholder="Date fin">
+                </div>
+                
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Recherche</label>
+                    <input type="text" name="search" class="form-control" 
+                           placeholder="Référence, expéditeur, objet, NIF..." 
+                           value="{{ request('search') }}">
+                </div>
+                
+                <div class="col-md-6 d-flex align-items-end">
+                    <div class="btn-group w-100">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-search me-1"></i> Rechercher
+                        </button>
+                        <a href="{{ route('courriers.index') }}" class="btn btn-secondary">
+                            <i class="fas fa-times me-1"></i> Réinitialiser
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Tableau des courriers -->
+    <div class="card shadow">
+        <div class="card-header py-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <h6 class="m-0 fw-bold text-primary">
+                    <i class="fas fa-list me-1"></i> Liste des Courriers
+                </h6>
+                <span class="badge bg-primary">
+                   {{ count($courriers) }} résultat(s)
+                </span>
+            </div>
+        </div>
+        <div class="card-body">
+           @if(count($courriers) > 0)
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th width="100">Référence</th>
+                                <th>Expéditeur / Contribuable</th>
+                                <th>Objet</th>
+                                <th width="120">Type</th>
+                                <th width="120">Statut</th>
+                                <th width="100">Date Réception</th>
+                                <th width="120">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($courriers as $courrier)
+                                <tr>
+                                    <td>
+                                        <strong class="text-primary">{{ $courrier->reference }}</strong>
+                                        @if($courrier->priorite == 'urgent')
+                                        <br><span class="badge bg-danger small">URGENT</span>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        <div class="fw-bold">{{ $courrier->expediteur }}</div>
+                                        @if($courrier->nif)
+                                        <small class="text-muted">NIF: {{ $courrier->nif }}</small>
+                                        @endif
+                                    </td>
+                                    <td>{{ Str::limit($courrier->objet, 80) }}</td>
+                                    <td>
+                                        @if($courrier->type_demande == 'exoneration')
+                                            @if($courrier->type_exoneration == 'ouverte')
+                                                <span class="badge bg-info">Exonération Ouverte</span>
+                                            @elseif($courrier->type_exoneration == 'fermee')
+                                                <span class="badge bg-info">Exonération Fermée</span>
+                                            @else
+                                                <span class="badge bg-info">Exonération</span>
+                                            @endif
+                                        @else
+                                            <span class="badge bg-warning">Dispense</span>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        @include('courriers.partials.statut-badge')
+                                    </td>
+                                    <td>{{ $courrier->date_reception->format('d/m/Y') }}</td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{{ route('courriers.show', $courrier->id) }}" 
+                                               class="btn btn-info" title="Voir détails">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            
+                                            @if(auth()->user()->hasRole('agent') && $courrier->statut == 'enregistre')
+                                            <a href="{{ route('courriers.edit', $courrier->id) }}" 
+                                               class="btn btn-warning" title="Analyser">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            @endif
+                                            
+                                            @if($courrier->peutEtreValidePar(auth()->user()))
+                                            <a href="{{ route('courriers.valider', $courrier->id) }}" 
+                                               class="btn btn-success" title="Valider">
+                                                <i class="fas fa-check"></i>
+                                            </a>
+                                            @endif
+                                        </div>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Pagination -->
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                    <div class="text-muted small">
+                        Affichage de {{ $courriers->firstItem() }} à {{ $courriers->lastItem() }} 
+                        sur {{ $courriers->total() }} courriers
+                    </div>
+                    <div>
+                        {{ $courriers->links() }}
+                    </div>
+                </div>
+            @else
+                <div class="text-center py-5">
+                    <i class="fas fa-inbox fa-4x text-muted mb-3"></i>
+                    <h4 class="text-muted">Aucun courrier trouvé</h4>
+                    <p class="text-muted">Commencez par enregistrer un nouveau courrier</p>
+                    @if(auth()->user()->hasRole(['secretaire', 'assistante']))
+                    <a href="{{ route('courriers.create') }}" class="btn btn-primary mt-2">
+                        <i class="fas fa-plus-circle me-1"></i> Premier Courrier
+                    </a>
+                    @endif
+                </div>
+            @endif
+        </div>
+    </div>
+</div>
+@endsection

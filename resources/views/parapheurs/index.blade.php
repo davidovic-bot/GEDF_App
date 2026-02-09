@@ -179,10 +179,10 @@
         </div>
     </div>
 </div>
-
+{{--
 <!-- Modals pour les actions -->
 @include('parapheurs.modals.rejet')
 @include('parapheurs.modals.signature')
 @include('parapheurs.modals.observation')
-
+--}}
 @endsection

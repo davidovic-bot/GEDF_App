@@ -1,6 +1,6 @@
 <?php
 
-use App\http\Controllers\CourrierController;
+use App\Http\Controllers\CourrierController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\ParapheurController;
@@ -13,18 +13,72 @@ Route::get('/', function () {
 });
 
 // =============================================================================
-// DASHBOARDS PAR RÔLE
+// 1. AUTHENTIFICATION BREEZE (DOIT ÊTRE EN PREMIER)
+// =============================================================================
+require __DIR__.'/auth.php';
+
+// =============================================================================
+// 2. DASHBOARD PRINCIPAL (DOIT ÊTRE AVANT LES DASHBOARDS SPÉCIFIQUES)
+// =============================================================================
+Route::middleware(['auth'])->group(function () {
+    Route::get('/dashboard', function () {
+        // DÉTERMINE LE DASHBOARD SELON L'UTILISATEUR
+        $user = auth()->user();
+        
+        // OPTION SIMPLE : vérifie par email
+        if ($user->email === 'superadmin@gedf.com') {
+            return view('dashboards.superadmin');
+        }
+        
+        // OPTION 2 : vérifie par poste
+        if ($user->poste === 'Super Admin') {
+            return view('dashboards.superadmin');
+        }
+        
+        // OPTION 3 : vue par défaut de Breeze
+        return view('dashboard');
+    })->name('dashboard');
+});
+
+// =============================================================================
+// 3. DASHBOARDS SPÉCIFIQUES (AVEC URLS DIFFÉRENTES POUR ÉVITER LES CONFLITS)
 // =============================================================================
 
-Route::middleware(['auth', 'issuperadmin'])->get('/dashboard/superadmin', function () {
+// SUPERADMIN - URL: /superadmin
+Route::middleware(['auth'])->get('/superadmin', function () {
+    // Vérifie MANUELLEMENT dans la route
+    $user = auth()->user();
+    
+    if ($user->email !== 'superadmin@gedf.com') {
+        abort(403, 'Accès réservé au superadmin');
+    }
+    
     return view('dashboards.superadmin');
-})->name('dashboard.superadmin');
+})->name('superadmin.dashboard');
 
-Route::middleware(['auth', 'isadmin'])->get('/dashboard/admin', function () {
+// ADMIN - URL: /admin
+Route::middleware(['auth'])->get('/admin', function () {
+    // Vérifie MANUELLEMENT
+    $user = auth()->user();
+    $allowed = ['superadmin@gedf.com', 'admin@gedf.com'];
+    
+    if (!in_array($user->email, $allowed)) {
+        abort(403, 'Accès réservé aux administrateurs');
+    }
+    
     return view('dashboards.admin');
-})->name('dashboard.admin');
+})->name('admin.dashboard');
 
-Route::middleware(['auth', 'issecretaire'])->get('/dashboard/secretaire', function () {
+// SECRÉTAIRE - URL: /secretaire
+Route::middleware(['auth'])->get('/secretaire', function () {
+    // Vérifie MANUELLEMENT
+    $user = auth()->user();
+    $allowed = ['superadmin@gedf.com', 'admin@gedf.com', 'secretaire@gedf.com'];
+    
+    if (!in_array($user->email, $allowed)) {
+        abort(403, 'Accès réservé au secrétariat');
+    }
+    
     $parapheursASaisir = DB::table('parapheurs')
         ->join('parapheur_statuts', 'parapheurs.statut_id', '=', 'parapheur_statuts.id')
         ->where('parapheur_statuts.code', 'creer')
@@ -38,70 +92,79 @@ Route::middleware(['auth', 'issecretaire'])->get('/dashboard/secretaire', functi
         ->count();
     
     return view('dashboards.secretaire', compact('parapheursASaisir', 'parapheursRejetes'));
-})->name('dashboard.secretaire');
+})->name('secretaire.dashboard');
 
-Route::middleware(['auth', 'isgestionnaire'])->get('/dashboard/gestionnaire', function () {
+// GESTIONNAIRE - URL: /gestionnaire
+Route::middleware(['auth'])->get('/gestionnaire', function () {
+    // Vérifie MANUELLEMENT
+    $user = auth()->user();
+    $allowed = ['superadmin@gedf.com', 'admin@gedf.com', 'gestionnaire@gedf.com'];
+    
+    if (!in_array($user->email, $allowed)) {
+        abort(403, 'Accès réservé aux gestionnaires');
+    }
+    
     $parapheursAAnalyser = DB::table('parapheurs')
         ->join('parapheur_statuts', 'parapheurs.statut_id', '=', 'parapheur_statuts.id')
         ->where('parapheur_statuts.code', 'analyse')
         ->count();
     
     return view('dashboards.gestionnaire', compact('parapheursAAnalyser'));
-})->name('dashboard.gestionnaire');
+})->name('gestionnaire.dashboard');
 
-Route::middleware(['auth', 'ischefservice'])->get('/dashboard/chef-service', function () {
+// CHEF SERVICE - URL: /chef-service
+Route::middleware(['auth'])->get('/chef-service', function () {
+    // Vérifie MANUELLEMENT
+    $user = auth()->user();
+    $allowed = ['superadmin@gedf.com', 'admin@gedf.com', 'chefservice@gedf.com'];
+    
+    if (!in_array($user->email, $allowed)) {
+        abort(403, 'Accès réservé aux chefs de service');
+    }
+    
     $parapheursAValider = DB::table('parapheurs')
         ->join('parapheur_statuts', 'parapheurs.statut_id', '=', 'parapheur_statuts.id')
         ->where('parapheur_statuts.code', 'attente_validation')
         ->count();
     
     return view('dashboards.chef-service', compact('parapheursAValider'));
-})->name('dashboard.chefservice');
+})->name('chefservice.dashboard');
 
-Route::middleware(['auth', 'isdirecteur'])->get('/dashboard/directeur', function () {
+// DIRECTEUR - URL: /directeur
+Route::middleware(['auth'])->get('/directeur', function () {
+    // Vérifie MANUELLEMENT
+    $user = auth()->user();
+    $allowed = ['superadmin@gedf.com', 'admin@gedf.com', 'directeur@gedf.com'];
+    
+    if (!in_array($user->email, $allowed)) {
+        abort(403, 'Accès réservé aux directeurs');
+    }
+    
     $parapheursASigner = DB::table('parapheurs')
         ->join('parapheur_statuts', 'parapheurs.statut_id', '=', 'parapheur_statuts.id')
         ->where('parapheur_statuts.code', 'attente_signature')
         ->count();
     
     return view('dashboards.directeur', compact('parapheursASigner'));
-})->name('dashboard.directeur');
-
-// Authentification Breeze
-require __DIR__.'/auth.php';
-
+})->name('directeur.dashboard');
 
 // =============================================================================
 // MODULE COURRIERS
 // =============================================================================
-
-// Route pour le module Courrier (Superadmin uniquement)
-Route::middleware(['auth', 'issuperadmin'])->get('/courriers', function () {
-    return "<h1 style='padding: 20px;'>📨 Module Courriers Superadmin</h1>
-            <div style='padding: 20px; background: #f8f9fa; border-radius: 10px;'>
-                <p>Module fonctionnel !</p>
-                <p><a href='/dashboard/superadmin'>← Retour au tableau de bord</a></p>
-            </div>";
-})->name('courriers');
-
-// Après les routes d'authentification de Breeze
 Route::middleware(['auth'])->group(function () {
-    // Dashboard
-    Route::get('/dashboard', function () {
-        return view('dashboard');
-    })->name('dashboard');
-    
-    // Module Courrier - Routes principales
+    // Module Courrier - Routes principales (suivant les conventions Laravel)
     Route::prefix('courriers')->name('courriers.')->group(function () {
+        Route::get('/archives', [CourrierController::class, 'archives'])->name('archives');
+        // Routes RESTful standards
         Route::get('/', [CourrierController::class, 'index'])->name('index');
-        Route::get('/enregistrer', [CourrierController::class, 'enregistrer'])->name('enregistrer');
+        Route::get('/create', [CourrierController::class, 'create'])->name('create'); // Changé 'enregistrer' en 'create'
         Route::post('/', [CourrierController::class, 'store'])->name('store');
         Route::get('/{courrier}', [CourrierController::class, 'show'])->name('show');
         Route::get('/{courrier}/edit', [CourrierController::class, 'edit'])->name('edit');
         Route::put('/{courrier}', [CourrierController::class, 'update'])->name('update');
         Route::delete('/{courrier}', [CourrierController::class, 'destroy'])->name('destroy');
         
-        // Routes spécifiques au métier
+        // Routes métier spécifiques à la procédure DRS
         Route::post('/{courrier}/attribuer', [CourrierController::class, 'attribuer'])->name('attribuer');
         Route::post('/{courrier}/upload-document', [CourrierController::class, 'uploadDocument'])->name('upload-document');
         Route::get('/{courrier}/historique', [CourrierController::class, 'historique'])->name('historique');
@@ -109,40 +172,26 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/{courrier}/deposer-parapheur', [CourrierController::class, 'deposerParapheur'])->name('deposer-parapheur');
     });
 });
-
-
-
 // =============================================================================
-// MODULE PARAPHEURS - ORDRE CORRECT : SPÉCIFIQUE → GÉNÉRIQUE
+// MODULE PARAPHEURS
 // =============================================================================
-
 Route::middleware(['auth'])->prefix('parapheurs')->name('parapheurs.')->group(function () {
     
-    // ====================
-    // 1. ROUTES SPÉCIFIQUES (DOIVENT ÊTRE EN PREMIER)
-    // ====================
-    
-    // Redirection selon le rôle
-    Route::get('/', function () {
-        $user = auth()->user();
-        switch ($user->role->name) {
-            case 'secretaire':
-                return redirect()->route('parapheurs.secretaire');
-            case 'agent':
-            case 'gestionnaire':
-                return redirect()->route('parapheurs.agent');
-            case 'chef_service':
-                return redirect()->route('parapheurs.chef_service');
-            case 'directeur':
-                return redirect()->route('parapheurs.directeur');
-            default:
-                return redirect()->route('parapheurs.supervision');
-        }
-    })->name('index');
-    
+    // Page d'accueil simple des parapheurs
+    Route::get('/', [ParapheurController::class, 'index'])->name('index');
     // Vue SECRÉTAIRE
-    Route::middleware(['issecretaire'])->group(function () {
-        Route::get('/secretaire', [ParapheurController::class, 'vueSecretaire'])->name('secretaire');
+    Route::middleware(['auth'])->group(function () {
+        Route::get('/secretaire', function () {
+            $user = auth()->user();
+            $allowed = ['superadmin@gedf.com', 'admin@gedf.com', 'secretaire@gedf.com'];
+            
+            if (!in_array($user->email, $allowed)) {
+                abort(403, 'Accès réservé au secrétariat');
+            }
+            
+            return app(ParapheurController::class)->vueSecretaire();
+        })->name('secretaire');
+        
         Route::get('/a-saisir', [ParapheurController::class, 'aSaisir'])->name('a.saisir');
         Route::get('/rejetes', [ParapheurController::class, 'rejetes'])->name('rejetes');
         Route::get('/create', [ParapheurController::class, 'create'])->name('create');
@@ -151,16 +200,36 @@ Route::middleware(['auth'])->prefix('parapheurs')->name('parapheurs.')->group(fu
     });
     
     // Vue AGENT/GESTIONNAIRE
-    Route::middleware(['isgestionnaire'])->group(function () {
-        Route::get('/agent', [ParapheurController::class, 'vueAgent'])->name('agent');
+    Route::middleware(['auth'])->group(function () {
+        Route::get('/agent', function () {
+            $user = auth()->user();
+            $allowed = ['superadmin@gedf.com', 'admin@gedf.com', 'gestionnaire@gedf.com'];
+            
+            if (!in_array($user->email, $allowed)) {
+                abort(403, 'Accès réservé aux gestionnaires');
+            }
+            
+            return app(ParapheurController::class)->vueAgent();
+        })->name('agent');
+        
         Route::get('/a-analyser', [ParapheurController::class, 'aAnalyser'])->name('a.analyser');
         Route::post('/{parapheur}/transmettre-chef-service', [ParapheurController::class, 'transmettreChefService'])->name('transmettre.chef_service');
         Route::post('/{parapheur}/rejeter-vers-secretaire', [ParapheurController::class, 'rejeterVersSecretaire'])->name('rejeter.secretaire');
     });
     
     // Vue CHEF SERVICE
-    Route::middleware(['ischefservice'])->group(function () {
-        Route::get('/chef-service', [ParapheurController::class, 'vueChefService'])->name('chef_service');
+    Route::middleware(['auth'])->group(function () {
+        Route::get('/chef-service', function () {
+            $user = auth()->user();
+            $allowed = ['superadmin@gedf.com', 'admin@gedf.com', 'chefservice@gedf.com'];
+            
+            if (!in_array($user->email, $allowed)) {
+                abort(403, 'Accès réservé aux chefs de service');
+            }
+            
+            return app(ParapheurController::class)->vueChefService();
+        })->name('chef_service');
+        
         Route::get('/a-valider', [ParapheurController::class, 'aValider'])->name('a.valider');
         Route::post('/{parapheur}/valider', [ParapheurController::class, 'valider'])->name('valider');
         Route::post('/{parapheur}/rejeter-vers-agent', [ParapheurController::class, 'rejeterVersAgent'])->name('rejeter.agent');
@@ -168,27 +237,40 @@ Route::middleware(['auth'])->prefix('parapheurs')->name('parapheurs.')->group(fu
     });
     
     // Vue DIRECTEUR
-    Route::middleware(['isdirecteur'])->group(function () {
-        Route::get('/directeur', [ParapheurController::class, 'vueDirecteur'])->name('directeur');
+    Route::middleware(['auth'])->group(function () {
+        Route::get('/directeur', function () {
+            $user = auth()->user();
+            $allowed = ['superadmin@gedf.com', 'admin@gedf.com', 'directeur@gedf.com'];
+            
+            if (!in_array($user->email, $allowed)) {
+                abort(403, 'Accès réservé aux directeurs');
+            }
+            
+            return app(ParapheurController::class)->vueDirecteur();
+        })->name('directeur');
+        
         Route::get('/a-signer', [ParapheurController::class, 'aSigner'])->name('a.signer');
         Route::post('/{parapheur}/signer', [ParapheurController::class, 'signer'])->name('signer');
         Route::post('/{parapheur}/rejeter-exceptionnel', [ParapheurController::class, 'rejeterExceptionnel'])->name('rejeter.exceptionnel');
     });
     
-    // ====================
-    // 2. SUPERVISION (Admin/Superadmin) - AVANT les routes avec paramètres
-    // ====================
-    
-    Route::middleware(['issuperadmin'])->group(function () {
-        Route::get('/supervision', [ParapheurController::class, 'supervision'])->name('supervision');
+    // SUPERVISION (Admin/Superadmin)
+    Route::middleware(['auth'])->group(function () {
+        Route::get('/supervision', function () {
+            $user = auth()->user();
+            
+            if ($user->email !== 'superadmin@gedf.com') {
+                abort(403, 'Accès réservé au superadmin');
+            }
+            
+            return app(ParapheurController::class)->supervision();
+        })->name('supervision');
+        
         Route::post('/{parapheur}/archiver', [ParapheurController::class, 'archiver'])->name('archiver');
         Route::get('/historique/{parapheur}', [ParapheurController::class, 'historique'])->name('historique');
     });
     
-    // ====================
-    // 3. ROUTES AVEC PARAMÈTRES (DOIVENT ÊTRE EN DERNIER)
-    // ====================
-    
+    // ROUTES AVEC PARAMÈTRES (EN DERNIER)
     Route::get('/{parapheur}', [ParapheurController::class, 'show'])->name('show');
     Route::get('/{parapheur}/edit', [ParapheurController::class, 'edit'])->name('edit');
     Route::put('/{parapheur}', [ParapheurController::class, 'update'])->name('update');
@@ -197,20 +279,51 @@ Route::middleware(['auth'])->prefix('parapheurs')->name('parapheurs.')->group(fu
 // =============================================================================
 // MODULES ADMINISTRATIFS
 // =============================================================================
-
-Route::middleware(['auth', 'issuperadmin'])->prefix('administration')->group(function () {
-    Route::get('/utilisateurs', [AdminController::class, 'index'])->name('admin.utilisateurs');
+Route::middleware(['auth'])->prefix('administration')->group(function () {
+    Route::get('/utilisateurs', function () {
+        $user = auth()->user();
+        
+        if ($user->email !== 'superadmin@gedf.com') {
+            abort(403, 'Accès réservé au superadmin');
+        }
+        
+        return app(AdminController::class)->index();
+    })->name('admin.utilisateurs');
+    
     Route::get('/roles', [AdminController::class, 'roles'])->name('admin.roles');
     Route::get('/parametres', [AdminController::class, 'parametres'])->name('admin.parametres');
     Route::get('/audit', [AdminController::class, 'audit'])->name('admin.audit');
 });
 
-Route::middleware(['auth', 'issuperadmin'])->prefix('statistiques')->group(function () {
-    Route::get('/', [StatistiqueController::class, 'index'])->name('statistiques.index');
+Route::middleware(['auth'])->prefix('statistiques')->group(function () {
+    Route::get('/', function () {
+        $user = auth()->user();
+        
+        if ($user->email !== 'superadmin@gedf.com') {
+            abort(403, 'Accès réservé au superadmin');
+        }
+        
+        return app(StatistiqueController::class)->index();
+    })->name('statistiques.index');
 });
 
+// =============================================================================
+// ROUTE TEST DÉFINITIVE
+// =============================================================================
+Route::middleware(['auth'])->get('/test-final', function() {
+    $user = auth()->user();
+    
+    if ($user->email !== 'superadmin@gedf.com') {
+        abort(403, 'Test échoué: ' . $user->email);
+    }
+    
+    return "🎉 TEST FINAL RÉUSSI ! Email: " . $user->email;
+});
 
-// Fallback
+// =============================================================================
+// FALLBACK
+// =============================================================================
 Route::fallback(function () {
-    return redirect()->route('dashboard.superadmin');
+    // Redirige vers le dashboard principal
+    return redirect()->route('dashboard');
 });

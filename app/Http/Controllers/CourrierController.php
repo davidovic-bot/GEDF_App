@@ -15,57 +15,27 @@ class CourrierController extends Controller
     /**
      * Afficher la liste des courriers
      */
-    public function index(Request $request)
-    {
-        // Filtres selon le rôle
-        $query = Courrier::with(['serviceDestinataire', 'agentAttribue', 'createur']);
-        
-        // Secrétaire voit tous les courriers
-        if (auth()->user()->hasRole('secretaire')) {
-            // Pas de filtre
-        }
-        // Agent ne voit que ses courriers attribués
-        elseif (auth()->user()->hasRole('agent')) {
-            $query->where('agent_attribue_id', auth()->id());
-        }
-        // Chef de service voit les courriers de son service
-        elseif (auth()->user()->hasRole('chef_service')) {
-            $query->where('service_destinataire_id', auth()->user()->service_id);
-        }
-        
-        // Filtres optionnels
-        if ($request->has('statut')) {
-            $query->where('statut', $request->statut);
-        }
-        
-        if ($request->has('type_demande')) {
-            $query->where('type_demande', $request->type_demande);
-        }
-        
-        if ($request->has('urgent')) {
-            $query->where('urgent', true);
-        }
-        
-        $courriers = $query->orderBy('created_at', 'desc')->paginate(20);
-        
-        return view('courriers.index', compact('courriers'));
+   public function index(Request $request)
+{
+    // Essaie de récupérer des données
+    try {
+        // Si ton modèle s'appelle Courier
+        $courriers = \App\Models\Courrier::all();
+    } catch (\Exception $e) {
+        // Sinon tableau vide
+        $courriers = [];
     }
-
-    /**
-     * Afficher le formulaire de création
-     */
-    public function create()
-    {
-        // Seulement secrétaire et superadmin peuvent créer
-        if (!auth()->user()->hasAnyRole(['secretaire', 'superadmin'])) {
-            abort(403, 'Non autorisé');
-        }
-        
-        $services = Service::all();
-        return view('courriers.create', compact('services'));
-    }
-
-    /**
+    
+    $stats = [
+        'enregistres' => 0,
+        'en_analyse' => 0,
+        'en_validation' => 0,
+        'signes' => 0,
+        'total' => 0,
+    ];
+    
+    return view('courriers.index', compact('courriers', 'stats'));
+}   /**
      * Enregistrer un nouveau courrier
      */
     public function store(Request $request)
@@ -173,6 +143,16 @@ class CourrierController extends Controller
         
         return back()->with('success', 'Courrier attribué avec succès');
     }
+
+    public function archives()
+{
+    // Récupérer les courriers archivés
+    $courriers = Courrier::where('statut', 'archive')
+        ->orderBy('date_archivage', 'desc')
+        ->get();
+    
+    return view('courriers.archives', compact('courriers'));
+}
 
     // ... autres méthodes à implémenter
 }
