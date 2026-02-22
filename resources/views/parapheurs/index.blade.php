@@ -3,26 +3,7 @@
 
 @section('content')
 <div class="container-fluid">
-    <!-- En-tête avec stats -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <h1 class="h3 mb-0">📋 Parapheurs</h1>
-                    <p class="text-muted mb-0">
-                        {{ $stats['total'] }} parapheurs • 
-                        {{ $stats['en_attente'] }} en attente • 
-                        {{ $stats['en_retard'] }} en retard
-                    </p>
-                </div>
-                @if(auth()->user()->hasRole(['secretaire', 'admin', 'superadmin']))
-                <a href="{{ route('courriers.create') }}" class="btn btn-primary">
-                    <i class="fas fa-plus"></i> Nouveau courrier
-                </a>
-                @endif
-            </div>
-        </div>
-    </div>
+    
 
     <!-- Filtres -->
     <div class="card shadow mb-4">

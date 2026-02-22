@@ -6,28 +6,6 @@
     <div class="row mb-4">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <h1 class="h3 mb-2">
-                        <i class="fas fa-envelope me-2"></i>
-                        📨 Module Courrier - Gestion des Dépenses Fiscales (GDF)
-                    </h1>
-                    <p class="text-muted mb-0">
-                        Traitement des demandes d'exonération ou de dispense de TVA - Direction des Régimes Spécifiques (DRS)
-                    </p>
-                </div>
-                
-                <!-- Boutons d'action -->
-                <div class="btn-group">
-                    @if(auth()->user()->hasRole(['secretaire', 'assistante', 'superadmin']))
-                    <a href="{{ route('courriers.create') }}" class="btn btn-primary">
-                        <i class="fas fa-plus-circle me-1"></i> Nouveau Courrier
-                    </a>
-                    @endif
-                    
-                    <a href="{{ route('courriers.archives') }}" class="btn btn-secondary">
-                        <i class="fas fa-archive me-1"></i> Archives
-                    </a>
-                </div>
             </div>
         </div>
     </div>
