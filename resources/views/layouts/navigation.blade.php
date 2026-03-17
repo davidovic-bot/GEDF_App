@@ -33,7 +33,7 @@
                         <!-- Administration (seulement superadmin) -->
                         @if(auth()->user()->role->name === 'superadmin')
                             <x-nav-link :href="route('admin.utilisateurs')" :active="request()->routeIs('admin.*')">
-                                {{ __('Administration') }}
+                                "/admin/dashboard"
                             </x-nav-link>
                         @endif
                     @endauth
@@ -104,7 +104,7 @@
                     </x-responsive-nav-link>
                     
                     <x-responsive-nav-link :href="route('admin.utilisateurs')" :active="request()->routeIs('admin.*')">
-                        {{ __('Administration') }}
+                        "/admin/dashboard"
                     </x-responsive-nav-link>
                 @endif
             @endauth

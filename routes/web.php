@@ -295,18 +295,6 @@ Route::middleware(['auth'])->prefix('administration')->group(function () {
     Route::get('/audit', [AdminController::class, 'audit'])->name('admin.audit');
 });
 
-Route::middleware(['auth'])->prefix('statistiques')->group(function () {
-    Route::get('/', function () {
-        $user = auth()->user();
-        
-        if ($user->email !== 'superadmin@gedf.com') {
-            abort(403, 'Accès réservé au superadmin');
-        }
-        
-        return app(StatistiqueController::class)->index();
-    })->name('statistiques.index');
-});
-
 // =============================================================================
 // ROUTE TEST DÉFINITIVE
 // =============================================================================
@@ -321,9 +309,73 @@ Route::middleware(['auth'])->get('/test-final', function() {
 });
 
 // =============================================================================
+// GESTION DES SERVICES (DRS)
+// =============================================================================
+Route::middleware(['auth'])->prefix('admin/services')->name('admin.services.')->group(function () {
+    // Routes CRUD standards
+    Route::get('/', [App\Http\Controllers\Admin\ServiceController::class, 'index'])->name('index');
+    Route::get('/create', [App\Http\Controllers\Admin\ServiceController::class, 'create'])->name('create');
+    Route::post('/', [App\Http\Controllers\Admin\ServiceController::class, 'store'])->name('store');
+    Route::get('/{service}', [App\Http\Controllers\Admin\ServiceController::class, 'show'])->name('show');
+    Route::get('/{service}/edit', [App\Http\Controllers\Admin\ServiceController::class, 'edit'])->name('edit');
+    Route::put('/{service}', [App\Http\Controllers\Admin\ServiceController::class, 'update'])->name('update');
+    Route::delete('/{service}', [App\Http\Controllers\Admin\ServiceController::class, 'destroy'])->name('destroy');
+    
+    // Routes supplémentaires pour activer/désactiver
+    Route::post('/{service}/activer', [App\Http\Controllers\Admin\ServiceController::class, 'activer'])->name('activer');
+    Route::post('/{service}/desactiver', [App\Http\Controllers\Admin\ServiceController::class, 'desactiver'])->name('desactiver');
+});
+
+// =============================================================================
 // FALLBACK
 // =============================================================================
 Route::fallback(function () {
     // Redirige vers le dashboard principal
     return redirect()->route('dashboard');
+});
+
+// =============================================================================
+// ROUTES D'ADMINISTRATION (TOUTES DANS LE MÊME GROUPE)
+// =============================================================================
+Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () {
+    // Dashboard
+    Route::get('/dashboard', [App\Http\Controllers\Admin\AdminController::class, 'index'])->name('dashboard');
+    Route::get('/', [App\Http\Controllers\Admin\AdminController::class, 'index'])->name('home');
+    
+    // Services DRS
+    Route::resource('services', App\Http\Controllers\Admin\ServiceController::class)
+        ->names([
+            'index' => 'services.index',
+            'create' => 'services.create',
+            'store' => 'services.store',
+            'show' => 'services.show',
+            'edit' => 'services.edit',
+            'update' => 'services.update',
+            'destroy' => 'services.destroy',
+        ]);
+    
+    // Statistiques (AVEC LE BON CONTROLLER)
+    Route::prefix('statistiques')->name('statistiques.')->group(function () {
+        Route::get('/', [App\Http\Controllers\Admin\StatistiqueController::class, 'index'])->name('index');
+        Route::get('/periode', [App\Http\Controllers\Admin\StatistiqueController::class, 'parPeriode'])->name('periode');
+        Route::get('/export', [App\Http\Controllers\Admin\StatistiqueController::class, 'export'])->name('export');
+    });
+    
+    // Audit
+    Route::get('/audit', [App\Http\Controllers\Admin\AdminController::class, 'audit'])->name('audit-logs');
+    
+    // Utilisateurs
+    Route::get('/utilisateurs', [App\Http\Controllers\Admin\AdminController::class, 'utilisateurs'])->name('users-list');
+    
+    // Rôles
+    Route::get('/roles', [App\Http\Controllers\Admin\AdminController::class, 'roles'])->name('roles-list');
+    
+    // Paramètres
+    Route::get('/parametres', [App\Http\Controllers\Admin\AdminController::class, 'parametres'])->name('settings');
+    
+    // Cache
+    Route::post('/clear-cache', [App\Http\Controllers\Admin\AdminController::class, 'clearCache'])->name('clear-cache');
+    
+    // Recherche
+    Route::get('/search', [App\Http\Controllers\Admin\AdminController::class, 'search'])->name('search');
 });

@@ -105,7 +105,7 @@
                             @if(request()->is('courriers*'))
                                 <i class="fas fa-envelope me-2"></i> 📨 Module Courrier - GDF
                             @elseif(request()->is('parapheurs*'))
-                                <i class="fas fa-folder me-2"></i> 📋 Module Parapheur - DRS
+                                <i class="fas fa-folder me-2"></i> 📋 Module Parapheur - GDF
                             @else
                                 <i class="fas fa-home me-2"></i> @yield('title', 'Tableau de bord')
                             @endif

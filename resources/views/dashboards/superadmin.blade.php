@@ -119,8 +119,8 @@
                             <a href="/courriers" class="nav-item">Courriers</a>
                             <a href="/parapheurs" class="nav-item">Parapheurs</a>
                             <a href="/tableau de bord" class="nav-item active">Suivi et tableau de bord</a>
-                            <a href="/Administration" class="nav-item">Administration</a>
-                            <a href="/statistiques" class="nav-item">Statistiques</a>
+                            <a href="/admin/dashboard" class="nav-item">Administration</a>
+                            <a href="{{ route('admin.statistiques.index') }}" class="nav-item">Statistiques</a>
                         </div>
                     </div>
                     

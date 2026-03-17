@@ -38,6 +38,10 @@ class Service extends Model
         return $this->hasMany(User::class);
     }
     
+    public function parapheurs()
+    {
+        return $this->hasMany(Parapheur::class);
+    }
     public function chefService(): HasOne
     {
         return $this->hasOne(User::class)

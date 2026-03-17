@@ -88,6 +88,25 @@ class User extends Authenticatable
         return $this->hasMany(PieceJointe::class);
     }
 
+        // ============================================
+    // RELATIONS AVEC LES PARAPHEURS
+    // ============================================
+
+    /**
+     * Parapheurs créés par cet utilisateur
+     */
+    public function parapheurs(): HasMany
+    {
+        return $this->hasMany(Parapheur::class, 'createur_id');
+    }
+
+    /**
+     * Parapheurs où cet utilisateur est le responsable actuel
+     */
+    public function parapheursResponsable(): HasMany
+    {
+        return $this->hasMany(Parapheur::class, 'responsable_actuel_id');
+    }
     // ============================================
     // ACCESSEURS SIMPLIFIÉS POUR TES ROUTES
     // ============================================
