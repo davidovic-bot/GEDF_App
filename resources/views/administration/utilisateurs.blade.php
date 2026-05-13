@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.gdf')
 
 @section('title', 'Gestion des utilisateurs')
 
@@ -11,7 +11,7 @@
             </h1>
         </div>
         <div class="col-auto">
-            <a href="#" class="btn btn-primary">
+            <a href="{{ route('admin.utilisateurs-create') }}" class="btn btn-primary">
                 <i class="bi bi-plus-circle"></i> Nouvel utilisateur
             </a>
         </div>
@@ -47,8 +47,8 @@
                             </span>
                         </td>
                         <td>
-                            <a href="#" class="btn btn-sm btn-warning">
-                                <i class="bi bi-pencil"></i>
+                            <a href="{{ route('admin.utilisateurs-edit', $user->id) }}" class="btn btn-sm btn-warning" title="Modifier">
+                            <i class="bi bi-pencil"></i>
                             </a>
                         </td>
                     </tr>

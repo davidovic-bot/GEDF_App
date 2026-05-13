@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.gdf')
 
 @section('title', 'Tableau de bord - Administration')
 
@@ -14,44 +14,59 @@
             </p>
         </div>
     </div>
-
+    
     <!-- Cartes statistiques -->
-    <div class="row g-4 mb-4">
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm">
+<div class="row g-4 mb-4">
+    <!-- Utilisateurs -->
+    <div class="col-md-3">
+        <a href="{{ route('admin.utilisateurs') }}" class="text-decoration-none">
+            <div class="card border-0 shadow-sm hover-card">
                 <div class="card-body">
                     <h6 class="text-muted mb-1">UTILISATEURS</h6>
                     <h2 class="mb-0">{{ $stats['users']['total'] ?? 0 }}</h2>
                     <small class="text-success">{{ $stats['users']['actifs'] ?? 0 }} actifs</small>
                 </div>
             </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm">
+        </a>
+    </div>
+
+    <!-- Parapheurs -->
+    <div class="col-md-3">
+        <a href="{{ route('parapheurs.index') }}" class="text-decoration-none">
+            <div class="card border-0 shadow-sm hover-card">
                 <div class="card-body">
                     <h6 class="text-muted mb-1">PARAPHEURS</h6>
                     <h2 class="mb-0">{{ $stats['parapheurs']['total'] ?? 0 }}</h2>
                     <small class="text-warning">{{ $stats['parapheurs']['en_cours'] ?? 0 }} en cours</small>
                 </div>
             </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm">
+        </a>
+    </div>
+
+    <!-- Services -->
+    <div class="col-md-3">
+        <a href="{{ route('admin.services.index') }}" class="text-decoration-none">
+            <div class="card border-0 shadow-sm hover-card">
                 <div class="card-body">
                     <h6 class="text-muted mb-1">SERVICES</h6>
                     <h2 class="mb-0">{{ $stats['services']['total'] ?? 0 }}</h2>
                 </div>
             </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm">
+        </a>
+    </div>
+
+    <!-- Rôles -->
+    <div class="col-md-3">
+        <a href="{{ route('admin.roles-list') }}" class="text-decoration-none">
+            <div class="card border-0 shadow-sm hover-card">
                 <div class="card-body">
                     <h6 class="text-muted mb-1">RÔLES</h6>
                     <h2 class="mb-0">{{ $stats['roles']['total'] ?? 0 }}</h2>
                 </div>
             </div>
-        </div>
+        </a>
     </div>
+</div>
 
     <!-- Derniers utilisateurs -->
     <div class="row">
@@ -88,4 +103,14 @@
         </div>
     </div>
 </div>
+<style>
+.hover-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+    cursor: pointer;
+}
+.hover-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+</style>
 @endsection

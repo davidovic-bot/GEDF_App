@@ -1,10 +1,9 @@
-{{-- resources/views/parapheurs/index.blade.php --}}
-@extends('layouts.app')
+@extends('layouts.gdf')
+
+@section('title', 'Gestion des parapheurs')
 
 @section('content')
 <div class="container-fluid">
-    
-
     <!-- Filtres -->
     <div class="card shadow mb-4">
         <div class="card-body">
@@ -13,24 +12,12 @@
                     <label class="form-label">Statut</label>
                     <select name="statut" class="form-select">
                         <option value="">Tous les statuts</option>
-                        <option value="en_attente_analyse" {{ request('statut') == 'en_attente_analyse' ? 'selected' : '' }}>
-                            ⏳ En attente d'analyse
-                        </option>
-                        <option value="en_attente_chef_service" {{ request('statut') == 'en_attente_chef_service' ? 'selected' : '' }}>
-                            👨‍💼 En attente Chef Service
-                        </option>
-                        <option value="en_attente_directeur" {{ request('statut') == 'en_attente_directeur' ? 'selected' : '' }}>
-                            👔 En attente Directeur
-                        </option>
-                        <option value="valide" {{ request('statut') == 'valide' ? 'selected' : '' }}>
-                            ✅ Validé
-                        </option>
-                        <option value="signe" {{ request('statut') == 'signe' ? 'selected' : '' }}>
-                            📝 Signé
-                        </option>
-                        <option value="rejete" {{ request('statut') == 'rejete' ? 'selected' : '' }}>
-                            ❌ Rejeté
-                        </option>
+                        <option value="en_attente_analyse" {{ request('statut') == 'en_attente_analyse' ? 'selected' : '' }}>⏳ En attente d'analyse</option>
+                        <option value="en_attente_chef_service" {{ request('statut') == 'en_attente_chef_service' ? 'selected' : '' }}>👨‍💼 En attente Chef Service</option>
+                        <option value="en_attente_directeur" {{ request('statut') == 'en_attente_directeur' ? 'selected' : '' }}>👔 En attente Directeur</option>
+                        <option value="valide" {{ request('statut') == 'valide' ? 'selected' : '' }}>✅ Validé</option>
+                        <option value="signe" {{ request('statut') == 'signe' ? 'selected' : '' }}>📝 Signé</option>
+                        <option value="rejete" {{ request('statut') == 'rejete' ? 'selected' : '' }}>❌ Rejeté</option>
                     </select>
                 </div>
                 
@@ -45,15 +32,11 @@
                 
                 <div class="col-md-4">
                     <label class="form-label">Recherche</label>
-                    <input type="text" name="search" class="form-control" 
-                           placeholder="Numéro, objet, référence..." 
-                           value="{{ request('search') }}">
+                    <input type="text" name="search" class="form-control" placeholder="Numéro, objet, référence..." value="{{ request('search') }}">
                 </div>
                 
                 <div class="col-md-2 d-flex align-items-end">
-                    <button type="submit" class="btn btn-primary w-100">
-                        <i class="fas fa-filter"></i> Filtrer
-                    </button>
+                    <button type="submit" class="btn btn-primary w-100"><i class="fas fa-filter"></i> Filtrer</button>
                 </div>
             </form>
         </div>
@@ -79,65 +62,19 @@
                     <tbody>
                         @forelse($parapheurs as $parapheur)
                         <tr class="{{ $parapheur->estEnRetard() ? 'table-danger' : '' }}">
-                            <td>
-                                <strong>{{ $parapheur->numero_parapheur }}</strong>
-                                @if($parapheur->estEnRetard())
-                                <span class="badge bg-danger ms-1">RETARD</span>
-                                @endif
-                            </td>
-                            <td>
-                                <div>{{ Str::limit($parapheur->courrier->objet, 50) }}</div>
-                                <small class="text-muted">Ref: {{ $parapheur->courrier->reference }}</small>
-                            </td>
+                            <td><strong>{{ $parapheur->numero_parapheur }}</strong>@if($parapheur->estEnRetard())<span class="badge bg-danger ms-1">RETARD</span>@endif</td>
+                            <td><div>{{ Str::limit($parapheur->courrier->objet, 50) }}</div><small class="text-muted">Ref: {{ $parapheur->courrier->reference }}</small></td>
                             <td>{{ $parapheur->courrier->typeCourrier->nom ?? '-' }}</td>
                             <td>{{ $parapheur->courrier->serviceEmetteur->nom ?? '-' }}</td>
+                            <td>@include('parapheurs.partials.statut-badge')</td>
+                            <td>@if($parapheur->priorite == 'urgent')<span class="badge bg-danger">URGENT</span>@else<span class="badge bg-secondary">Normal</span>@endif</td>
+                            <td>@if($parapheur->date_limite_traitement){{ $parapheur->date_limite_traitement->format('d/m/Y') }}@else<span class="text-muted">-</span>@endif</td>
                             <td>
-                                @include('parapheurs.partials.statut-badge')
-                            </td>
-                            <td>
-                                @if($parapheur->priorite == 'urgent')
-                                <span class="badge bg-danger">URGENT</span>
-                                @else
-                                <span class="badge bg-secondary">Normal</span>
-                                @endif
-                            </td>
-                            <td>
-                                @if($parapheur->date_limite_traitement)
-                                {{ $parapheur->date_limite_traitement->format('d/m/Y') }}
-                                @if(now()->diffInDays($parapheur->date_limite_traitement, false) < 0)
-                                <div class="text-danger small">
-                                    {{ abs(now()->diffInDays($parapheur->date_limite_traitement)) }}j de retard
-                                </div>
-                                @elseif(now()->diffInDays($parapheur->date_limite_traitement, false) <= 2)
-                                <div class="text-warning small">
-                                    {{ now()->diffInDays($parapheur->date_limite_traitement) }}j restants
-                                </div>
-                                @endif
-                                @else
-                                <span class="text-muted">-</span>
-                                @endif
-                            </td>
-                            <td>
-                                <a href="{{ route('parapheurs.show', $parapheur) }}" 
-                                   class="btn btn-sm btn-primary" title="Voir">
-                                    <i class="fas fa-eye"></i>
-                                </a>
-                                
+                                <a href="{{ route('parapheurs.show', $parapheur) }}" class="btn btn-sm btn-primary" title="Voir"><i class="fas fa-eye"></i></a>
                                 @if($parapheur->peutEtreValidePar(auth()->user()))
-                                <a href="{{ route('parapheurs.valider', $parapheur) }}" 
-                                   class="btn btn-sm btn-success" title="Valider"
-                                   onclick="return confirm('Confirmer la validation ?')">
-                                    <i class="fas fa-check"></i>
-                                </a>
+                                <a href="{{ route('parapheurs.valider', $parapheur) }}" class="btn btn-sm btn-success" title="Valider" onclick="return confirm('Confirmer la validation ?')"><i class="fas fa-check"></i></a>
                                 @endif
-                                
-                                @if($parapheur->peutEtreSignePar(auth()->user()))
-                                <button class="btn btn-sm btn-success" title="Signer"
-                                        data-bs-toggle="modal" data-bs-target="#modalSignature{{ $parapheur->id }}">
-                                    <i class="fas fa-signature"></i>
-                                </button>
-                                @endif
-                            </td>
+                             </td>
                         </tr>
                         @empty
                         <tr>
@@ -150,20 +87,10 @@
                     </tbody>
                 </table>
             </div>
-            
-            <!-- Pagination -->
             @if($parapheurs->hasPages())
-            <div class="d-flex justify-content-center mt-4">
-                {{ $parapheurs->links() }}
-            </div>
+            <div class="d-flex justify-content-center mt-4">{{ $parapheurs->links() }}</div>
             @endif
         </div>
     </div>
 </div>
-{{--
-<!-- Modals pour les actions -->
-@include('parapheurs.modals.rejet')
-@include('parapheurs.modals.signature')
-@include('parapheurs.modals.observation')
---}}
 @endsection

@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.gdf')
 
 @section('content')
     <div class="p-6">

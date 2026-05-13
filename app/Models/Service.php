@@ -30,7 +30,7 @@ class Service extends Model
     // Relations
     public function courriers(): HasMany
     {
-        return $this->hasMany(Courrier::class);
+        return $this->hasMany(Courrier::class, 'service_emetteur_id');
     }
     
     public function users(): HasMany
@@ -86,37 +86,10 @@ class Service extends Model
         return $this->nom;
     }
     
-    public function getStatutAttribute(): string
-    {
-        return $this->est_actif ? 'Actif' : 'Inactif';
-    }
-    
-    public function getCouleurStatutAttribute(): string
-    {
-        return $this->est_actif ? 'success' : 'secondary';
-    }
-    
-    public function getNombreCourriersAttribute(): int
-    {
-        return $this->courriers()->count();
-    }
-    
-    public function getNombreUtilisateursAttribute(): int
-    {
-        return $this->users()->count();
-    }
-    
-    public function getCourriersEnCoursAttribute(): int
-    {
-        return $this->courriers()
-                    ->whereIn('statut', [Courrier::STATUT_ANALYSE, Courrier::STATUT_VALIDATION])
-                    ->count();
-    }
-    
     public function getCourriersEnRetardAttribute(): int
     {
         return $this->courriers()
-                    ->whereIn('statut', [Courrier::STATUT_ANALYSE, Courrier::STATUT_VALIDATION])
+                    ->whereIn('statut_general', [Courrier::STATUT_ANALYSE, Courrier::STATUT_VALIDATION])
                     ->where('date_limite', '<', now())
                     ->count();
     }
@@ -137,5 +110,47 @@ class Service extends Model
     public function activer(): void
     {
         $this->update(['est_actif' => true]);
+    }
+
+// ACCESSEURS POUR LA VUE INDEX
+// ============================================
+
+    public function getNomResponsableAttribute(): ?string
+    {
+        if ($this->responsable_nom) {
+          return $this->responsable_nom;
+    }
+        if ($this->chef_id) {
+          $chef = User::find($this->chef_id);
+          return $chef ? $chef->name : null;
+    }
+          return null;
+    }
+
+    public function getNombreUtilisateursAttribute(): int
+    {
+         return $this->users()->count();
+    }
+
+    public function getNombreCourriersAttribute(): int
+    {
+         return $this->courriers()->count();
+    }
+
+    public function getCourriersEnCoursAttribute(): int
+    {
+         return $this->courriers()
+        ->whereIn('statut_general', ['en_attente', 'en_cours', 'en_parapheur'])
+        ->count();
+    }
+
+     public function getStatutAttribute(): string
+    {
+         return $this->actif ? 'Actif' : 'Inactif';
+    }
+
+    public function getCouleurStatutAttribute(): string
+    {
+         return $this->actif ? 'success' : 'secondary';
     }
 }

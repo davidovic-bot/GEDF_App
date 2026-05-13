@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.gdf')
 
 @section('title', 'Gestion des services')
 
@@ -63,6 +63,7 @@
                             <a href="{{ route('admin.services.edit', $service) }}" class="btn btn-sm btn-warning" title="Modifier">
                                 <i class="bi bi-pencil"></i>
                             </a>
+
                             @if($service->est_actif)
                             <form action="{{ route('admin.services.desactiver', $service) }}" method="POST" class="d-inline">
                                 @csrf
@@ -78,6 +79,7 @@
                                 </button>
                             </form>
                             @endif
+
                             <form action="{{ route('admin.services.destroy', $service) }}" method="POST" class="d-inline" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer ce service ?')">
                                 @csrf
                                 @method('DELETE')

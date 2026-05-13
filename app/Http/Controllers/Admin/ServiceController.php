@@ -14,14 +14,12 @@ class ServiceController extends Controller
      */
     public function index()
     {
-        $services = Service::with(['users', 'courriers'])
-            ->orderBy('ordre_affichage')
-            ->orderBy('nom')
-            ->get();
-            
-        return view('administration.services.index', compact('services'));
+    $services = Service::with(['users', 'courriers'])
+        ->orderBy('code') // ou orderBy('nom') si tu préfères
+        ->get();
+    
+    return view('administration.services.index', compact('services'));
     }
-
     /**
      * Affiche le formulaire de création
      */
