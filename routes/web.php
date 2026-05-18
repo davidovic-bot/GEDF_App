@@ -59,6 +59,7 @@ Route::middleware(['auth'])->prefix('courriers')->name('courriers.')->group(func
     Route::get('/{courrier}/edit', [CourrierController::class, 'edit'])->name('edit');
     Route::put('/{courrier}', [CourrierController::class, 'update'])->name('update');
     Route::delete('/{courrier}', [CourrierController::class, 'destroy'])->name('destroy');
+    Route::post('/{courrier}/transmettre', [CourrierController::class, 'transmettre'])->name('transmettre');
 
     Route::post('/{courrier}/attribuer', [CourrierController::class, 'attribuer'])->name('attribuer');
     Route::post('/{courrier}/upload-document', [CourrierController::class, 'uploadDocument'])->name('upload-document');
@@ -207,4 +208,5 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
     Route::delete('/roles/{id}', [App\Http\Controllers\Admin\AdminController::class, 'rolesDestroy'])->name('roles-destroy');
     Route::get('/roles/{id}/permissions', [App\Http\Controllers\Admin\AdminController::class, 'rolesPermissions'])->name('roles-permissions');
     Route::post('/roles/{id}/permissions', [App\Http\Controllers\Admin\AdminController::class, 'rolesPermissionsUpdate'])->name('roles-permissions-update');
+    Route::post('/courriers/{courrier}/transmettre', [CourrierController::class, 'transmettre'])->name('courriers.transmettre');
 });

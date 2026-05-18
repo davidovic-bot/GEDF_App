@@ -186,16 +186,20 @@
                                     <span class="badge bg-warning">Dispense</span>
                                 @endif
                             </td>
-                            <td>@include('courriers.partials.statut-badge')</td>
-                            <td>{{ $courrier->date_reception->format('d/m/Y') }}</td>
-                            <td>
+                            <td><span class="badge bg-{{ $courrier->statut_general == 'enregistre' ? 'secondary' : ($courrier->statut_general == 'en_analyse' ? 'warning' : ($courrier->statut_general == 'traite' ? 'success' : 'info')) }}">
+    {{ ucfirst($courrier->statut_general) }}
+</span></td>
+                            <td>{{ \Carbon\Carbon::parse($courrier->date_reception)->format('d/m/Y') }}</td>
+                                                        <td>
                                 <div class="btn-group btn-group-sm">
                                     <a href="{{ route('courriers.show', $courrier->id) }}" class="btn btn-info" title="Voir détails"><i class="fas fa-eye"></i></a>
-                                    @if(auth()->user()->hasRole('agent') && $courrier->statut == 'enregistre')
-                                    <a href="{{ route('courriers.edit', $courrier->id) }}" class="btn btn-warning" title="Analyser"><i class="fas fa-edit"></i></a>
+
+                                    @if(auth()->user()->hasRole('agent') && $courrier->statut_general == 'enregistre')
+                                        <a href="{{ route('courriers.edit', $courrier->id) }}" class="btn btn-warning" title="Analyser"><i class="fas fa-edit"></i></a>
                                     @endif
+
                                     @if($courrier->peutEtreValidePar(auth()->user()))
-                                    <a href="{{ route('courriers.valider', $courrier->id) }}" class="btn btn-success" title="Valider"><i class="fas fa-check"></i></a>
+                                        <a href="{{ route('courriers.valider', $courrier->id) }}" class="btn btn-success" title="Valider"><i class="fas fa-check"></i></a>
                                     @endif
                                 </div>
                             </td>

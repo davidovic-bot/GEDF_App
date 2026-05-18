@@ -65,75 +65,55 @@ class CourrierController extends Controller
         return view('courriers.index', compact('courriers', 'stats'));
     }
 
+    public function create()
+    {
+    $services = \App\Models\Service::all();
+    return view('courriers.create', compact('services'));
+    }
+
     /**
      * Enregistrer un nouveau courrier
      */
     public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'expediteur' => 'required|string|max:255',
-            'objet' => 'required|string|max:500',
-            'type_demande' => 'required|in:exoneration,dispense_tva,autre',
-            'date_reception' => 'required|date',
-            'service_destinataire_id' => 'required|exists:services,id',
-            'document' => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120',
-            'notes' => 'nullable|string',
-            'urgent' => 'boolean'
-        ]);
-
-        $annee = date('Y');
-        $count = Courrier::whereYear('created_at', $annee)->count() + 1;
-        $reference = 'DRS-' . $annee . '-' . str_pad($count, 4, '0', STR_PAD_LEFT);
+{
+    try {
+        $numero = 'CR-' . date('Ymd') . '-' . rand(100, 999);
 
         $courrier = Courrier::create([
-            'reference' => $reference,
-            'expediteur' => $validated['expediteur'],
-            'objet' => $validated['objet'],
-            'type_demande' => $validated['type_demande'],
-            'date_reception' => $validated['date_reception'],
-            'service_emetteur_id' => $validated['service_destinataire_id'],
+            'numero' => $numero,
+            'beneficiaire' => $request->beneficiaire,
+            'nif' => $request->nif,
+            'objet' => $request->objet,
+            'type_demande' => $request->type_demande,
+            'service_emetteur_id' => $request->service_emetteur_id,
+            'date_reception' => $request->date_reception,
+            'statut_general' => 'enregistre',
             'created_by' => auth()->id(),
-            'notes_analyse' => $validated['notes'] ?? null,
-            'urgent' => $request->has('urgent'),
-            'statut_general' => 'enregistre'
         ]);
 
-        if ($request->hasFile('document')) {
-            $file = $request->file('document');
-            $filename = Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME))
-                      . '-' . time() . '.' . $file->getClientOriginalExtension();
-
-            $path = $file->storeAs('documents/courriers', $filename, 'public');
-
+        if ($request->hasFile('fichier')) {
+            $path = $request->file('fichier')->store('courriers', 'public');
             Document::create([
                 'courrier_id' => $courrier->id,
-                'nom_fichier' => $file->getClientOriginalName(),
+                'nom_fichier' => $request->file('fichier')->getClientOriginalName(),
                 'chemin_fichier' => $path,
-                'extension' => $file->getClientOriginalExtension(),
-                'taille' => $file->getSize() / 1024 / 1024,
-                'type_document' => 'original',
+                'extension' => $request->file('fichier')->getClientOriginalExtension(),
+                'taille' => $request->file('fichier')->getSize(),
                 'uploaded_by' => auth()->id(),
-                'description' => 'Document original du courrier'
             ]);
         }
 
-        HistoriqueAction::create([
-            'courrier_id' => $courrier->id,
-            'utilisateur_id' => auth()->id(),
-            'action' => 'enregistrement',
-            'commentaire' => 'Courrier enregistré par ' . auth()->user()->name
-        ]);
-
-        return redirect()->route('courriers.show', $courrier)
-            ->with('success', 'Courrier enregistré avec succès. Référence: ' . $reference);
+        return redirect()->route('courriers.index')->with('success', 'Courrier enregistré.');
+    } catch (\Exception $e) {
+        return back()->withErrors(['error' => $e->getMessage()])->withInput();
     }
-
+}
     /**
      * Afficher un courrier spécifique
      */
     public function show(Courrier $courrier)
     {
-        $courrier->load(['documents', 'historique.utilisateur', 'serviceDestinataire', 'agentAttribue', 'createur']);
+        $courrier->load(['documents', 'createur']);
         return view('courriers.show', compact('courrier'));
     }
 
@@ -175,5 +155,23 @@ class CourrierController extends Controller
             ->get();
 
         return view('courriers.archives', compact('courriers'));
+    }
+
+    public function edit(Courrier $courrier)
+    {
+        $services = \App\Models\Service::all();
+        return view('courriers.edit', compact('courrier', 'services'));
+    }
+
+    public function update(Request $request, Courrier $courrier)
+    {
+       $courrier->update($request->only(['beneficiaire', 'nif', 'objet', 'type_demande', 'service_emetteur_id', 'date_reception', 'motif']));
+       return redirect()->route('courriers.show', $courrier)->with('success', 'Courrier modifié.');
+    }
+
+    public function transmettre(Courrier $courrier)
+    {
+       $courrier->update(['statut_general' => 'en_analyse']);
+       return redirect()->route('courriers.index')->with('success', 'Courrier transmis à l’agent.');
     }
 }

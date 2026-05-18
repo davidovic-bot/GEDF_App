@@ -11,23 +11,18 @@ class Courrier extends Model
     // Renommez éventuellement la table si nécessaire
     // protected $table = 'dossiers_fiscaux';
     
-    protected $fillable = [
-        'reference',
-        'sujet',
-        'description',
-        'type_dossier',          // NOUVEAU
-        'statut',                // NOUVEAU
-        'date_limite',           // NOUVEAU
-        'date_decision',         // NOUVEAU
-        'contribuable_nom',
-        'contribuable_id_fiscal',
-        'montant_impact',
-        'createur_id',
-        'service_id',
-        'motif_rejet',           // Si applicable
-        'date_archive'           // NOUVEAU
-    ];
-    
+   protected $fillable = [
+    'numero',
+    'reference',
+    'beneficiaire',
+    'nif',
+    'objet',
+    'type_demande',
+    'service_emetteur_id',
+    'date_reception',
+    'statut_general',
+    'created_by',
+];
     protected $casts = [
         'date_limite' => 'date',
         'date_decision' => 'datetime',
@@ -158,5 +153,21 @@ public function fichiersParapheur(): HasMany
         'id', // Clé locale sur courriers
         'id' // Clé locale sur parapheurs
     );
+}
+
+public function peutEtreValidePar($user)
+{
+    // Seul un chef de service ou un directeur peut valider
+    return $user->hasRole(['chef_service', 'directeur']);
+}
+
+public function documents()
+{
+    return $this->hasMany(\App\Models\Document::class);
+}
+
+public function service_emetteur()
+{
+    return $this->belongsTo(Service::class, 'service_emetteur_id');
 }
 }
