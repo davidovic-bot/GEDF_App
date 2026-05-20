@@ -45,12 +45,12 @@ class AuthenticatedSessionController extends Controller
         // 🔥 REDIRECTION SIMPLIFIÉE PAR EMAIL
         // SUPERADMIN
         if ($user->email === 'superadmin@gedf.com') {
-            return redirect('/superadmin');
+            return redirect('/dashboard');
         }
         
         // ADMIN
         if ($user->email === 'admin@gedf.com') {
-            return redirect('/admin');
+            return redirect('/dashboard');
         }
         
         // SECRÉTAIRE

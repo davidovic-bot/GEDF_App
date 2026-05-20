@@ -174,17 +174,14 @@
                             </td>
                             <td>{{ Str::limit($courrier->objet, 80) }}</td>
                             <td>
-                                @if($courrier->type_demande == 'exoneration')
-                                    @if($courrier->type_exoneration == 'ouverte')
-                                        <span class="badge bg-info">Exonération Ouverte</span>
-                                    @elseif($courrier->type_exoneration == 'fermee')
-                                        <span class="badge bg-info">Exonération Fermée</span>
-                                    @else
-                                        <span class="badge bg-info">Exonération</span>
-                                    @endif
+                                @if($courrier->type_demande == 'exoneration_tva')
+                                    <span class="badge bg-info">Exonération TVA</span>
+                                @elseif($courrier->type_demande == 'dispense_tva')
+                                    <span class="badge bg-warning">Dispense TVA</span>
                                 @else
-                                    <span class="badge bg-warning">Dispense</span>
+                                    <span class="badge bg-secondary">{{ $courrier->type_demande }}</span>
                                 @endif
+                            </td>
                             </td>
                             <td><span class="badge bg-{{ $courrier->statut_general == 'enregistre' ? 'secondary' : ($courrier->statut_general == 'en_analyse' ? 'warning' : ($courrier->statut_general == 'traite' ? 'success' : 'info')) }}">
     {{ ucfirst($courrier->statut_general) }}
@@ -200,6 +197,12 @@
 
                                     @if($courrier->peutEtreValidePar(auth()->user()))
                                         <a href="{{ route('courriers.valider', $courrier->id) }}" class="btn btn-success" title="Valider"><i class="fas fa-check"></i></a>
+                                    @endif
+
+                                    @if(auth()->user()->hasRole('agent') && $courrier->statut_general == 'en_analyse')
+                                        <a href="{{ route('courriers.analyse', $courrier->id) }}" class="btn btn-primary btn-sm" title="Analyser">
+                                             <i class="fas fa-search"></i> Analyser
+                                              </a>
                                     @endif
                                 </div>
                             </td>

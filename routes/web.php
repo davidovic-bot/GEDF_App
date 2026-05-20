@@ -60,6 +60,8 @@ Route::middleware(['auth'])->prefix('courriers')->name('courriers.')->group(func
     Route::put('/{courrier}', [CourrierController::class, 'update'])->name('update');
     Route::delete('/{courrier}', [CourrierController::class, 'destroy'])->name('destroy');
     Route::post('/{courrier}/transmettre', [CourrierController::class, 'transmettre'])->name('transmettre');
+    Route::get('/{courrier}/analyse', [CourrierController::class, 'analyse'])->name('analyse');
+Route::post('/{courrier}/transmettre-chef', [CourrierController::class, 'transmettreChef'])->name('transmettre.chef');
 
     Route::post('/{courrier}/attribuer', [CourrierController::class, 'attribuer'])->name('attribuer');
     Route::post('/{courrier}/upload-document', [CourrierController::class, 'uploadDocument'])->name('upload-document');

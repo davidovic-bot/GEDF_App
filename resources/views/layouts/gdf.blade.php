@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@yield('title', 'DGI - GDF')</title>
     
-    <!-- Tailwind CSS CDN (pour le layout) -->
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Bootstrap CSS (pour le contenu) -->
+    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     
     <!-- Font Awesome -->
@@ -17,7 +17,6 @@
     <!-- Alpine.js CDN -->
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     
-    <!-- Configuration Tailwind -->
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -63,7 +62,6 @@
             background-color: rgba(255, 255, 255, 0.15);
             border-bottom-color: #FCD116;
         }
-        
     </style>
     @stack('styles')
 </head>
@@ -76,18 +74,14 @@
                     <div class="w-24 h-16 flex items-center">
                         <img src="{{ asset('images/logo DGI.jpg') }}" alt="DGI" class="h-full w-auto object-contain">
                     </div>
-                    
                     <div class="text-center flex-1 mx-8">
                         <h1 class="text-sm font-bold text-gray-900 leading-tight">
                             Ministère De L'Économie, Des Finances, De La Dette<br>
                             Et Des Participations, Chargé De La Lutte Contre La Vie Chère
                         </h1>
-                        <h2 class="text-base font-bold text-blue-800 mt-1">
-                            Direction Générale des Impôts
-                        </h2>
+                        <h2 class="text-base font-bold text-blue-800 mt-1">Direction Générale des Impôts</h2>
                         <p class="text-xs text-gray-600 mt-1">L'impôt au cœur du développement</p>
                     </div>
-                    
                     <div class="w-24 h-16 flex items-center">
                         <img src="{{ asset('images/sceau-gabon.jpg') }}" alt="République du Gabon" class="h-full w-auto object-contain">
                     </div>
@@ -108,38 +102,27 @@
                         </div>
                         
                         <div class="flex items-center">
-    <a href="{{ route('courriers.index') }}" class="nav-item {{ request()->routeIs('courriers*') ? 'active' : '' }}">Courriers</a>
-    <a href="{{ route('parapheurs.index') }}" class="nav-item {{ request()->routeIs('parapheurs*') ? 'active' : '' }}">Parapheurs</a>
+                            <a href="{{ route('courriers.index') }}" class="nav-item {{ request()->routeIs('courriers*') ? 'active' : '' }}">Courriers</a>
+                            <a href="{{ route('parapheurs.index') }}" class="nav-item {{ request()->routeIs('parapheurs*') ? 'active' : '' }}">Parapheurs</a>
+                            <a href="{{ route('dashboard') }}" class="nav-item {{ request()->routeIs('dashboard') ? 'active' : '' }}">Tableau de bord</a>
 
-    {{-- Tableau de bord adapté au rôle --}}
-    @if(auth()->user()->hasRole('superadmin') || auth()->user()->hasRole('admin'))
-        <a href="{{ route('admin.dashboard') }}" class="nav-item {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">Tableau de bord</a>
-    @else
-        <a href="{{ route('dashboard') }}" class="nav-item {{ request()->routeIs('dashboard') ? 'active' : '' }}">Tableau de bord</a>
-    @endif
-
-    {{-- Administration (superadmin uniquement) --}}
-    @if(auth()->user()->hasRole('superadmin'))
-        <a href="{{ route('admin.dashboard') }}" class="nav-item {{ request()->routeIs('admin.*') ? 'active' : '' }}">Administration</a>
-        <a href="{{ route('admin.statistiques.index') }}" class="nav-item {{ request()->routeIs('admin.statistiques*') ? 'active' : '' }}">Statistiques</a>
-    @endif
-</div>
+                            @if(auth()->user()->hasRole('superadmin'))
+                                <a href="{{ route('admin.utilisateurs') }}" class="nav-item {{ request()->routeIs('admin.utilisateurs') ? 'active' : '' }}">Administration</a>
+                                <a href="{{ route('admin.statistiques.index') }}" class="nav-item {{ request()->routeIs('admin.statistiques*') ? 'active' : '' }}">Statistiques</a>
+                            @endif
+                        </div>
                     </div>
                     
                     <div class="flex items-center space-x-4">
                         <div class="relative" x-data="{ open: false }">
-                            <button @click="open = !open" 
-                                    class="flex items-center space-x-2 text-white hover:bg-white/10 px-3 py-2 rounded-lg">
+                            <button @click="open = !open" class="flex items-center space-x-2 text-white hover:bg-white/10 px-3 py-2 rounded-lg">
                                 <div class="text-right">
                                     <p class="text-sm font-medium">{{ auth()->user()->name ?? 'Superadmin' }}</p>
                                     <p class="text-xs text-blue-200">Système GDF</p>
                                 </div>
-                                <div class="w-8 h-8 bg-white text-topbar-blue rounded-full flex items-center justify-center font-bold">
-                                    SA
-                                </div>
+                                <div class="w-8 h-8 bg-white text-topbar-blue rounded-full flex items-center justify-center font-bold">SA</div>
                             </button>
-                            <div x-show="open" @click.away="open = false" 
-                                 class="absolute right-0 mt-2 bg-white rounded-lg shadow-lg border py-2 min-w-48 z-50">
+                            <div x-show="open" @click.away="open = false" class="absolute right-0 mt-2 bg-white rounded-lg shadow-lg border py-2 min-w-48 z-50">
                                 <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Profil</a>
                                 <hr class="my-2">
                                 <form method="POST" action="{{ route('logout') }}">
@@ -160,9 +143,7 @@
 
     <footer class="mt-10 border-t border-gray-200 py-4">
         <div class="container mx-auto px-6 text-center">
-            <p class="text-sm text-gray-600">
-                © 2025 Direction Générale des Impôts - République Gabonaise • Système GDF v2.1.0
-            </p>
+            <p class="text-sm text-gray-600">© 2025 Direction Générale des Impôts - République Gabonaise • Système GDF v2.1.0</p>
         </div>
     </footer>
 
@@ -172,14 +153,10 @@
         function dashboardApp() {
             return {
                 darkMode: false,
-                
                 toggleDarkMode() {
                     this.darkMode = !this.darkMode;
-                    if (this.darkMode) {
-                        document.documentElement.classList.add('dark');
-                    } else {
-                        document.documentElement.classList.remove('dark');
-                    }
+                    if (this.darkMode) document.documentElement.classList.add('dark');
+                    else document.documentElement.classList.remove('dark');
                 }
             }
         }

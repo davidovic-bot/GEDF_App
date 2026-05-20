@@ -174,4 +174,20 @@ class CourrierController extends Controller
        $courrier->update(['statut_general' => 'en_analyse']);
        return redirect()->route('courriers.index')->with('success', 'Courrier transmis à l’agent.');
     }
+
+    public function analyse(Courrier $courrier)
+    {
+    return view('courriers.analyse', compact('courrier'));
+    }
+
+    public function transmettreChef(Request $request, Courrier $courrier)
+    {
+    $courrier->update([
+        'statut_general' => 'en_validation_chef',
+        'motif' => $request->motif,
+        'type_exoneration' => $request->type_exoneration,
+    ]);
+
+    return redirect()->route('courriers.index')->with('success', 'Dossier transmis au chef de service.');
+    }
 }
