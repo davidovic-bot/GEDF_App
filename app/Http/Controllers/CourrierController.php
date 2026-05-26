@@ -42,6 +42,9 @@ class CourrierController extends Controller
             $query->whereDate('date_reception', '<=', $request->date_fin);
         }
 
+       
+
+
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
@@ -76,37 +79,49 @@ class CourrierController extends Controller
      */
     public function store(Request $request)
 {
-    try {
-        $numero = 'CR-' . date('Ymd') . '-' . rand(100, 999);
+    // Validation
+    $request->validate([
+        'beneficiaire' => 'required|string|max:255',
+        'nif' => 'nullable|string|max:50',
+        'date_reception' => 'required|date',
+        'fichier' => 'nullable|file|mimes:pdf|max:5120', // 5MB max
+    ]);
 
-        $courrier = Courrier::create([
-            'numero' => $numero,
-            'beneficiaire' => $request->beneficiaire,
-            'nif' => $request->nif,
-            'objet' => $request->objet,
-            'type_demande' => $request->type_demande,
-            'service_emetteur_id' => $request->service_emetteur_id,
-            'date_reception' => $request->date_reception,
-            'statut_general' => 'enregistre',
-            'created_by' => auth()->id(),
+    // Générer un numéro unique
+    $annee = date('Y');
+    $mois = date('m');
+    $count = Courrier::whereYear('created_at', $annee)
+                     ->whereMonth('created_at', $mois)
+                     ->count() + 1;
+    $numero = 'CR-' . $annee . $mois . '-' . str_pad($count, 4, '0', STR_PAD_LEFT);
+
+    // Créer le courrier
+    $courrier = Courrier::create([
+        'numero' => $numero,
+        'beneficiaire' => $request->beneficiaire,
+        'nif' => $request->nif,
+        'date_reception' => $request->date_reception,
+        'statut_general' => 'enregistre',
+        'created_by' => auth()->id(),
+    ]);
+
+    // Gestion du fichier joint
+    if ($request->hasFile('fichier')) {
+        $file = $request->file('fichier');
+        $filename = time() . '_' . $file->getClientOriginalName();
+        $path = $file->storeAs('courriers', $filename, 'public');
+
+        \App\Models\Document::create([
+            'courrier_id' => $courrier->id,
+            'nom_fichier' => $file->getClientOriginalName(),
+            'chemin_fichier' => $path,
+            'extension' => $file->getClientOriginalExtension(),
+            'taille' => $file->getSize(),
+            'uploaded_by' => auth()->id(),
         ]);
-
-        if ($request->hasFile('fichier')) {
-            $path = $request->file('fichier')->store('courriers', 'public');
-            Document::create([
-                'courrier_id' => $courrier->id,
-                'nom_fichier' => $request->file('fichier')->getClientOriginalName(),
-                'chemin_fichier' => $path,
-                'extension' => $request->file('fichier')->getClientOriginalExtension(),
-                'taille' => $request->file('fichier')->getSize(),
-                'uploaded_by' => auth()->id(),
-            ]);
-        }
-
-        return redirect()->route('courriers.index')->with('success', 'Courrier enregistré.');
-    } catch (\Exception $e) {
-        return back()->withErrors(['error' => $e->getMessage()])->withInput();
     }
+
+    return redirect()->route('courriers.index')->with('success', 'Courrier enregistré. Référence : ' . $numero);
 }
     /**
      * Afficher un courrier spécifique
@@ -190,4 +205,37 @@ class CourrierController extends Controller
 
     return redirect()->route('courriers.index')->with('success', 'Dossier transmis au chef de service.');
     }
+
+    public function valider(Courrier $courrier)
+    {
+    $courrier->update(['statut_general' => 'en_validation_directeur']);
+    return redirect()->route('courriers.index')->with('success', 'Dossier validé.');
+    }
+
+    public function instructionDrs(Courrier $courrier)
+{
+    $services = Service::all();
+    return view('courriers.instruction_drs', compact('courrier', 'services'));
+}
+
+public function storeInstructionDrs(Request $request, Courrier $courrier)
+{
+
+    $courrier->update([
+        'objet' => $request->objet,
+        'type_demande' => $request->type_demande,
+        'secteur' => $request->secteur,
+        'service_emetteur_id' => $request->service_emetteur_id,
+        'instruction_drs' => $request->instruction_drs,
+        'statut_general' => 'en_analyse'
+    ]);
+    return redirect()->route('courriers.index')->with('success', 'Instruction envoyée au chef de service.');
+}
+
+public function approuver(Courrier $courrier)
+{
+    $courrier->update(['statut_general' => 'valide']);
+    return redirect()->route('courriers.index')->with('success', 'Dossier approuvé par le DRS.');
+}
+
 }

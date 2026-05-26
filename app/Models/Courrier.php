@@ -11,18 +11,16 @@ class Courrier extends Model
     // Renommez éventuellement la table si nécessaire
     // protected $table = 'dossiers_fiscaux';
     
-   protected $fillable = [
+    protected $fillable = [
     'numero',
-    'reference',
     'beneficiaire',
     'nif',
-    'objet',
-    'type_demande',
-    'service_emetteur_id',
     'date_reception',
     'statut_general',
     'created_by',
+    // autres champs si nécessaire
 ];
+
     protected $casts = [
         'date_limite' => 'date',
         'date_decision' => 'datetime',

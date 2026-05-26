@@ -61,7 +61,13 @@ Route::middleware(['auth'])->prefix('courriers')->name('courriers.')->group(func
     Route::delete('/{courrier}', [CourrierController::class, 'destroy'])->name('destroy');
     Route::post('/{courrier}/transmettre', [CourrierController::class, 'transmettre'])->name('transmettre');
     Route::get('/{courrier}/analyse', [CourrierController::class, 'analyse'])->name('analyse');
-Route::post('/{courrier}/transmettre-chef', [CourrierController::class, 'transmettreChef'])->name('transmettre.chef');
+    Route::post('/{courrier}/transmettre-chef', [CourrierController::class, 'transmettreChef'])->name('transmettre.chef');
+    Route::post('/{courrier}/valider', [CourrierController::class, 'valider'])->name('valider');
+    Route::get('/courriers/{courrier}/instruire', [CourrierController::class, 'instruire'])->name('instruire');
+    Route::post('/courriers/{courrier}/instruire', [CourrierController::class, 'storeInstruction'])->name('store.instruction');
+    Route::get('/{courrier}/instruction', [CourrierController::class, 'instructionDrs'])->name('instruction.drs');
+    Route::post('/{courrier}/instruction', [CourrierController::class, 'storeInstructionDrs'])->name('instruction.store');
+    
 
     Route::post('/{courrier}/attribuer', [CourrierController::class, 'attribuer'])->name('attribuer');
     Route::post('/{courrier}/upload-document', [CourrierController::class, 'uploadDocument'])->name('upload-document');

@@ -73,6 +73,12 @@
                             <button type="submit" class="btn btn-primary">Transmettre à l’agent</button>
                         </form>
                     @endif
+
+                    @if(auth()->user()->hasRole('drs') && $courrier->statut_general == 'enregistre')
+    <a href="{{ route('courriers.instruction.drs', $courrier->id) }}" class="btn btn-warning">
+        <i class="fas fa-edit"></i> Instruire
+    </a>
+@endif
                 </div>
             </div>
         </div>

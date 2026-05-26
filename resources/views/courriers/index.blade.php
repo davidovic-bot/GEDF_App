@@ -204,6 +204,18 @@
                                              <i class="fas fa-search"></i> Analyser
                                               </a>
                                     @endif
+
+                                    @if(auth()->user()->hasRole('drs') && $courrier->statut_general == 'enregistre')
+                                     <a href="{{ route('courriers.instruction.drs', $courrier->id) }}" class="btn btn-primary btn-sm">Instruire</a>
+                                    @endif
+
+                                    @if(auth()->user()->hasRole('drs') && $courrier->statut_general == 'en_validation_directeur')
+                                        <form action="{{ route('courriers.approuver', $courrier->id) }}" method="POST">
+                                    @csrf
+                                        <button type="submit" class="btn btn-success btn-sm">Approuver</button>
+                                        </form>
+                                    @endif
+
                                 </div>
                             </td>
                         </tr>
