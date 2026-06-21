@@ -17,7 +17,7 @@
 <div class="container-fluid">
     <div class="row mb-4">
         <div class="col">
-            <h1 class="h3">Enregistrement d’un courrier</h1>
+            <h1 class="h3" style="color: #120d0d !important;">Enregistrement d’un courrier</h1>
         </div>
     </div>
     

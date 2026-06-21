@@ -320,7 +320,7 @@
                     @if($parapheur->responsable_actuel_id == auth()->id() && in_array($parapheur->statut, ['en_attente', 'en_cours']))
                     <div class="mt-4 pt-4 border-top">
                         <h6 class="mb-3">Actions disponibles</h6>
-                        <div class="btn-group">
+                        <div class="btn-group flex-wrap">
                             <button type="button" class="btn btn-success" data-toggle="modal" data-target="#validerModal">
                                 <i class="fas fa-check mr-1"></i> Valider
                             </button>
@@ -333,6 +333,50 @@
                         </div>
                     </div>
                     @endif
+
+                    <!-- ============================================================ -->
+                    <!-- NOUVELLES ACTIONS POUR LE CIRCUIT 2 (PARAPHEUR) -->
+                    <!-- ============================================================ -->
+                    <div class="mt-4 pt-4 border-top">
+                        <h6 class="mb-3">Circuit de validation des pièces</h6>
+                        <div class="btn-group-vertical w-100">
+                            
+                            <!-- Étape 1 : Dépôt des pièces (Secrétaire/Admin) -->
+                            @if(auth()->user()->hasAnyRoles(['secretaire', 'admin', 'superadmin']) && in_array($parapheur->statut->code ?? $parapheur->statut, ['creer', 'rejete']))
+                            <a href="{{ route('parapheurs.deposer-pieces', $parapheur) }}" class="btn btn-primary mb-2">
+                                <i class="fas fa-upload mr-2"></i> 📤 Déposer les pièces (tableau + factures)
+                            </a>
+                            @endif
+
+                            <!-- Étape 2 : Vérification des factures (Agent) -->
+                            @if(auth()->user()->hasAnyRoles(['agent', 'gestionnaire', 'admin', 'superadmin']) && ($parapheur->statut->code ?? $parapheur->statut) === 'analyse')
+                            <a href="{{ route('parapheurs.verifier-factures', $parapheur) }}" class="btn btn-warning mb-2">
+                                <i class="fas fa-check-double mr-2"></i> 🔍 Vérifier les factures
+                            </a>
+                            @endif
+
+                            <!-- Étape 3 : Contrôle de régularité (Chef de Service) -->
+                            @if(auth()->user()->hasAnyRoles(['chef_service', 'admin', 'superadmin']) && ($parapheur->statut->code ?? $parapheur->statut) === 'attente_validation')
+                            <a href="{{ route('parapheurs.controle-regularite', $parapheur) }}" class="btn btn-info mb-2">
+                                <i class="fas fa-clipboard-check mr-2"></i> ✅ Contrôle de régularité
+                            </a>
+                            @endif
+
+                            <!-- Étape 4 : Visa final (Directeur) -->
+                            @if(auth()->user()->hasAnyRoles(['directeur', 'admin', 'superadmin']) && ($parapheur->statut->code ?? $parapheur->statut) === 'attente_signature')
+                            <a href="{{ route('parapheurs.visa-final', $parapheur) }}" class="btn btn-success mb-2">
+                                <i class="fas fa-signature mr-2"></i> ✍️ Visa final
+                            </a>
+                            @endif
+
+                            <!-- Bouton de rejet (visible pour tous selon le statut) -->
+                            @if(in_array($parapheur->statut->code ?? $parapheur->statut, ['analyse', 'attente_validation', 'attente_signature']))
+                            <button type="button" class="btn btn-danger" data-toggle="modal" data-target="#rejeterPiecesModal">
+                                <i class="fas fa-times mr-2"></i> ❌ Rejeter les pièces
+                            </button>
+                            @endif
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -414,12 +458,256 @@
     </div>
 </div>
 
-<!-- Modals seront ajoutés ici -->
-@include('parapheurs.modals.valider')
-@include('parapheurs.modals.rejeter')
-@include('parapheurs.modals.transmettre')
-@include('parapheurs.modals.ajouter_fichier')
-@include('parapheurs.modals.admin_modals')
+<!-- ============================================================ -->
+<!-- MODALS -->
+<!-- ============================================================ -->
+
+<!-- Modal Valider -->
+<div class="modal fade" id="validerModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form action="{{ route('parapheurs.valider', $parapheur) }}" method="POST">
+                @csrf
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-check text-success mr-2"></i>Valider
+                    </h5>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Commentaire (optionnel)</label>
+                        <textarea class="form-control" name="commentaire" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-success">Valider</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Rejeter -->
+<div class="modal fade" id="rejeterModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form action="{{ route('parapheurs.rejeter', $parapheur) }}" method="POST">
+                @csrf
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-times text-danger mr-2"></i>Rejeter
+                    </h5>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Motif du rejet *</label>
+                        <textarea class="form-control" name="motif" rows="3" required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-danger">Rejeter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Transmettre -->
+<div class="modal fade" id="transmettreModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form action="{{ route('parapheurs.transmettre', $parapheur) }}" method="POST">
+                @csrf
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-forward text-primary mr-2"></i>Transmettre
+                    </h5>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Commentaire (optionnel)</label>
+                        <textarea class="form-control" name="commentaire" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Transmettre</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Ajouter Fichier -->
+<div class="modal fade" id="ajouterFichierModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form action="{{ route('parapheurs.upload-fichier', $parapheur) }}" method="POST" enctype="multipart/form-data">
+                @csrf
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-paperclip text-primary mr-2"></i>Ajouter une pièce jointe
+                    </h5>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="fichier">Fichier *</label>
+                        <input type="file" class="form-control-file" id="fichier" name="fichier" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="description">Description</label>
+                        <input type="text" class="form-control" id="description" name="description" 
+                               placeholder="Description du fichier">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Ajouter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Rejeter les pièces (Circuit 2) -->
+<div class="modal fade" id="rejeterPiecesModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form action="{{ route('parapheurs.rejeter-pieces', $parapheur) }}" method="POST">
+                @csrf
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-times mr-2"></i>Rejeter les pièces
+                    </h5>
+                    <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle mr-2"></i>
+                        Cette action renverra le dossier au secrétariat pour correction.
+                    </div>
+                    <div class="form-group">
+                        <label for="motif_rejet">Motif du rejet <span class="text-danger">*</span></label>
+                        <textarea class="form-control" id="motif_rejet" name="motif" rows="4" 
+                                  placeholder="Expliquez clairement pourquoi les pièces sont rejetées..." required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-times mr-1"></i> Confirmer le rejet
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Admin : Réassigner -->
+<div class="modal fade" id="reassignModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form action="{{ route('parapheurs.reassigner', $parapheur) }}" method="POST">
+                @csrf
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-user-edit mr-2"></i>Réassigner
+                    </h5>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Nouveau responsable *</label>
+                        <select class="form-control" name="responsable_id" required>
+                            <option value="">Sélectionner...</option>
+                            @foreach($users ?? [] as $user)
+                            <option value="{{ $user->id }}">{{ $user->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Réassigner</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Admin : Forcer étape -->
+<div class="modal fade" id="forceModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form action="{{ route('parapheurs.force-etape', $parapheur) }}" method="POST">
+                @csrf
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-forward mr-2"></i>Forcer l'étape
+                    </h5>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle mr-2"></i>
+                        Cette action est réservée aux administrateurs.
+                    </div>
+                    <div class="form-group">
+                        <label>Étape cible *</label>
+                        <select class="form-control" name="etape" required>
+                            <option value="1">Enregistrement</option>
+                            <option value="2">Analyse technique</option>
+                            <option value="3">Validation hiérarchique</option>
+                            <option value="4">Signature</option>
+                            <option value="5">Terminé</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-warning">Forcer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Admin : Archiver -->
+<div class="modal fade" id="archiveModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form action="{{ route('parapheurs.archiver', $parapheur) }}" method="POST">
+                @csrf
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-archive mr-2"></i>Archiver
+                    </h5>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        L'archivage rendra le parapheur en lecture seule.
+                    </div>
+                    <div class="form-group">
+                        <label>Motif d'archivage</label>
+                        <input type="text" class="form-control" name="motif" placeholder="Motif...">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-secondary">Archiver</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
 @endsection
 
@@ -504,60 +792,10 @@
     .timeline-item:last-child .timeline-content {
         border-bottom: none;
     }
+    
+    /* Boutons vertical */
+    .btn-group-vertical .btn {
+        border-radius: 6px !important;
+    }
 </style>
 @endpush
-
-<div class="modal fade" id="validerModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <form action="{{ route('parapheurs.valider', $parapheur) }}" method="POST">
-                @csrf
-                <div class="modal-header">
-                    <h5 class="modal-title">
-                        <i class="fas fa-check text-success mr-2"></i>Valider
-                    </h5>
-                    <button type="button" class="close" data-dismiss="modal">&times;</button>
-                </div>
-                <div class="modal-body">
-                    <div class="form-group">
-                        <label>Commentaire (optionnel)</label>
-                        <textarea class="form-control" name="commentaire" rows="3"></textarea>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Annuler</button>
-                    <button type="submit" class="btn btn-success">Valider</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<!-- Modal Rejeter -->
-<div class="modal fade" id="rejeterModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <form action="{{ route('parapheurs.rejeter', $parapheur) }}" method="POST">
-                @csrf
-                <div class="modal-header">
-                    <h5 class="modal-title">
-                        <i class="fas fa-times text-danger mr-2"></i>Rejeter
-                    </h5>
-                    <button type="button" class="close" data-dismiss="modal">&times;</button>
-                </div>
-                <div class="modal-body">
-                    <div class="form-group">
-                        <label>Motif du rejet *</label>
-                        <textarea class="form-control" name="motif" rows="3" required></textarea>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Annuler</button>
-                    <button type="submit" class="btn btn-danger">Rejeter</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-@endsection

@@ -30,12 +30,27 @@ class Parapheur extends Model
         'directeur_id',
         'date_limite_traitement',
         'numero_parapheur',
+        // Nouveaux champs pour les pièces justificatives
+        'tableau_factures',
+        'factures',
+        'montant_tva',
+        'montant_css',
+        'montant_total',
+        'verifie_par',
+        'verifie_le',
+        'controle_par',
+        'controle_le',
+        'visa_final_par',
+        'visa_final_le',
+        'motif_rejet',
+        'type_attestation', 
     ];
 
     protected $casts = [
         'date_reception' => 'date',
         'date_limite' => 'date',
         'date_limite_traitement' => 'datetime',
+        'factures' => 'array', // Pour décoder automatiquement le JSON
     ];
 
     // ==================== RELATIONS EXISTANTES ====================
@@ -114,6 +129,32 @@ class Parapheur extends Model
         return null;
     }
 
+    // ==================== RELATIONS VERS LES UTILISATEURS POUR LE CIRCUIT ====================
+
+    /**
+     * Relation avec l'utilisateur qui a vérifié les factures (Agent)
+     */
+    public function verifiePar(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'verifie_par');
+    }
+
+    /**
+     * Relation avec l'utilisateur qui a contrôlé la régularité (Chef)
+     */
+    public function controlePar(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'controle_par');
+    }
+
+    /**
+     * Relation avec l'utilisateur qui a apposé le visa final (Directeur)
+     */
+    public function visaFinalPar(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'visa_final_par');
+    }
+
     // ==================== ACCESSORS POUR LA VUE ====================
     
     /**
@@ -149,6 +190,73 @@ class Parapheur extends Model
         return 'normal';
     }
 
+    // ==================== ACCESSORS POUR LES MONTANTS ====================
+
+    /**
+     * Accessor pour le montant TVA formaté
+     */
+    public function getMontantTvaFormateAttribute()
+    {
+        if (!$this->montant_tva) {
+            return '0 FCFA';
+        }
+        return number_format($this->montant_tva, 0, ',', ' ') . ' FCFA';
+    }
+
+    /**
+     * Accessor pour le montant CSS formaté
+     */
+    public function getMontantCssFormateAttribute()
+    {
+        if (!$this->montant_css) {
+            return '0 FCFA';
+        }
+        return number_format($this->montant_css, 0, ',', ' ') . ' FCFA';
+    }
+
+    /**
+     * Accessor pour le montant total formaté
+     */
+    public function getMontantTotalFormateAttribute()
+    {
+        if (!$this->montant_total) {
+            return '0 FCFA';
+        }
+        return number_format($this->montant_total, 0, ',', ' ') . ' FCFA';
+    }
+
+    /**
+     * Accessor pour les factures décodées
+     */
+    public function getFacturesListeAttribute()
+    {
+        return json_decode($this->factures, true) ?? [];
+    }
+
+    /**
+     * Accessor pour le nom du vérificateur
+     */
+    public function getVerifieParNomAttribute()
+    {
+        return $this->verifiePar ? $this->verifiePar->name : 'Non vérifié';
+    }
+
+    /**
+     * Accessor pour le nom du contrôleur
+     */
+    public function getControleParNomAttribute()
+    {
+        return $this->controlePar ? $this->controlePar->name : 'Non contrôlé';
+    }
+
+    /**
+     * Accessor pour le nom du signataire du visa final
+     */
+    public function getVisaFinalParNomAttribute()
+    {
+        return $this->visaFinalPar ? $this->visaFinalPar->name : 'Non signé';
+    }
+
     // ==================== MÉTHODES POUR LA VUE ====================
     
     /**
@@ -171,10 +279,6 @@ class Parapheur extends Model
      */
     public function peutEtreValidePar($user): bool
     {
-        // Exemple de logique :
-        // - Chef de service peut valider si statut = 'en_attente_chef_service'
-        // - Directeur peut valider si statut = 'en_attente_directeur'
-        
         if (!$user || !$this->statut) {
             return false;
         }
@@ -284,4 +388,46 @@ class Parapheur extends Model
         
         return $transitions[$statutCode] ?? null;
     }
+
+    /**
+     * Vérifie si le parapheur a toutes les pièces justificatives
+     */
+    public function aToutesLesPieces(): bool
+    {
+        return !empty($this->tableau_factures) && !empty($this->factures);
+    }
+
+    /**
+     * Vérifie si les factures ont été vérifiées
+     */
+    public function estVerifie(): bool
+    {
+        return !empty($this->verifie_par) && !empty($this->verifie_le);
+    }
+
+    /**
+     * Vérifie si le contrôle de régularité a été fait
+     */
+    public function estControle(): bool
+    {
+        return !empty($this->controle_par) && !empty($this->controle_le);
+    }
+
+    /**
+     * Vérifie si le visa final a été apposé
+     */
+    public function aVisaFinal(): bool
+    {
+        return !empty($this->visa_final_par) && !empty($this->visa_final_le);
+    }
+
+    public function getTypeAttestationLibelleAttribute()
+{
+    $types = [
+        'exoneration' => 'Exonération ouverte (TVA, CSS, etc.)',
+        'dispense'    => 'Dispense ouverte (TVA, CSS, etc.)',
+    ];
+
+    return $types[$this->type_attestation] ?? $this->type_attestation;
+}
 }

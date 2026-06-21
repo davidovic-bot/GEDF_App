@@ -81,8 +81,12 @@ Route::middleware(['auth'])->prefix('courriers')->name('courriers.')->group(func
 // =============================================================================
 Route::middleware(['auth'])->prefix('parapheurs')->name('parapheurs.')->group(function () {
     Route::get('/', [ParapheurController::class, 'index'])->name('index');
+    
+    // ⭐ ROUTES DE CRÉATION (AJOUTÉES)
+    Route::get('/create', [ParapheurController::class, 'create'])->name('create');
+    Route::post('/', [ParapheurController::class, 'store'])->name('store');
 
-    // Agent / Gestionnaire
+    // Agent 
     Route::middleware(['auth'])->group(function () {
         Route::get('/agent', function () {
             $user = auth()->user();
@@ -144,6 +148,29 @@ Route::middleware(['auth'])->prefix('parapheurs')->name('parapheurs.')->group(fu
         Route::post('/{parapheur}/archiver', [ParapheurController::class, 'archiver'])->name('archiver');
         Route::get('/historique/{parapheur}', [ParapheurController::class, 'historique'])->name('historique');
     });
+
+    // ============================================================
+    // NOUVELLES ROUTES POUR LE CIRCUIT 2 (PARAPHEUR)
+    // ============================================================
+
+    // Dépôt des pièces justificatives (Secrétaire/Admin)
+    Route::get('/{parapheur}/deposer-pieces', [ParapheurController::class, 'deposerPieces'])->name('deposer-pieces');
+    Route::post('/{parapheur}/store-pieces', [ParapheurController::class, 'storePieces'])->name('store-pieces');
+
+    // Vérification des factures (Agent)
+    Route::get('/{parapheur}/verifier-factures', [ParapheurController::class, 'verifierFactures'])->name('verifier-factures');
+    Route::post('/{parapheur}/valider-factures', [ParapheurController::class, 'validerFactures'])->name('valider-factures');
+
+    // Contrôle de régularité (Chef de Service)
+    Route::get('/{parapheur}/controle-regularite', [ParapheurController::class, 'controleRegularite'])->name('controle-regularite');
+    Route::post('/{parapheur}/valider-controle', [ParapheurController::class, 'validerControle'])->name('valider-controle');
+
+    // Visa final (Directeur)
+    Route::get('/{parapheur}/visa-final', [ParapheurController::class, 'visaFinal'])->name('visa-final');
+    Route::post('/{parapheur}/apposer-visa', [ParapheurController::class, 'apposerVisaFinal'])->name('apposer-visa');
+
+    // Rejet des pièces (Tous les rôles)
+    Route::post('/{parapheur}/rejeter-pieces', [ParapheurController::class, 'rejeterPieces'])->name('rejeter-pieces');
 
     // Routes avec paramètres (toujours en dernier)
     Route::get('/{parapheur}', [ParapheurController::class, 'show'])->name('show');

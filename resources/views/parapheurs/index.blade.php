@@ -4,6 +4,22 @@
 
 @section('content')
 <div class="container-fluid">
+    <!-- En-tête avec bouton Créer -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h1 class="h3 text-dark">
+    <i class="fas fa-file-alt text-primary mr-2"></i>Gestion des parapheurs
+</h1>
+                @if(auth()->user()->hasAnyRoles(['secretaire', 'admin', 'superadmin']))
+                <a href="{{ route('parapheurs.create') }}" class="btn btn-primary">
+                    <i class="fas fa-plus mr-2"></i> Nouveau parapheur
+                </a>
+                @endif
+            </div>
+        </div>
+    </div>
+
     <!-- Filtres -->
     <div class="card shadow mb-4">
         <div class="card-body">
@@ -62,25 +78,73 @@
                     <tbody>
                         @forelse($parapheurs as $parapheur)
                         <tr class="{{ $parapheur->estEnRetard() ? 'table-danger' : '' }}">
-                            <td><strong>{{ $parapheur->numero_parapheur }}</strong>@if($parapheur->estEnRetard())<span class="badge bg-danger ms-1">RETARD</span>@endif</td>
-                            <td><div>{{ Str::limit($parapheur->courrier->objet, 50) }}</div><small class="text-muted">Ref: {{ $parapheur->courrier->reference }}</small></td>
-                            <td>{{ $parapheur->courrier->typeCourrier->nom ?? '-' }}</td>
-                            <td>{{ $parapheur->courrier->serviceEmetteur->nom ?? '-' }}</td>
-                            <td>@include('parapheurs.partials.statut-badge')</td>
-                            <td>@if($parapheur->priorite == 'urgent')<span class="badge bg-danger">URGENT</span>@else<span class="badge bg-secondary">Normal</span>@endif</td>
-                            <td>@if($parapheur->date_limite_traitement){{ $parapheur->date_limite_traitement->format('d/m/Y') }}@else<span class="text-muted">-</span>@endif</td>
                             <td>
-                                <a href="{{ route('parapheurs.show', $parapheur) }}" class="btn btn-sm btn-primary" title="Voir"><i class="fas fa-eye"></i></a>
-                                @if($parapheur->peutEtreValidePar(auth()->user()))
-                                <a href="{{ route('parapheurs.valider', $parapheur) }}" class="btn btn-sm btn-success" title="Valider" onclick="return confirm('Confirmer la validation ?')"><i class="fas fa-check"></i></a>
+                                <strong>{{ $parapheur->numero_parapheur }}</strong>
+                                @if($parapheur->estEnRetard())
+                                <span class="badge bg-danger ms-1">RETARD</span>
                                 @endif
-                             </td>
+                            </td>
+                            <td>
+                                <div>{{ Str::limit($parapheur->courrier->objet ?? $parapheur->objet, 50) }}</div>
+                                <small class="text-muted">Ref: {{ $parapheur->courrier->reference ?? $parapheur->reference }}</small>
+                            </td>
+                            <td>{{ $parapheur->typeCourrier->nom ?? $parapheur->type_courrier_id ?? '-' }}</td>
+                            <td>{{ $parapheur->service_expediteur ?? '-' }}</td>
+                            <td>@include('parapheurs.partials.statut-badge')</td>
+                            <td>
+                                @if($parapheur->priorite == 'urgent' || $parapheur->priorite == 'haute')
+                                <span class="badge bg-danger">URGENT</span>
+                                @else
+                                <span class="badge bg-secondary">Normal</span>
+                                @endif
+                            </td>
+                            <td>
+                                @if($parapheur->date_limite_traitement)
+                                {{ \Carbon\Carbon::parse($parapheur->date_limite_traitement)->format('d/m/Y') }}
+                                @elseif($parapheur->date_limite)
+                                {{ \Carbon\Carbon::parse($parapheur->date_limite)->format('d/m/Y') }}
+                                @else
+                                <span class="text-muted">-</span>
+                                @endif
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{{ route('parapheurs.show', $parapheur) }}" class="btn btn-primary" title="Voir">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    
+                                    @if($parapheur->peutEtreValidePar(auth()->user()))
+                                    <a href="{{ route('parapheurs.valider', $parapheur) }}" class="btn btn-success" title="Valider" onclick="return confirm('Confirmer la validation ?')">
+                                        <i class="fas fa-check"></i>
+                                    </a>
+                                    @endif
+
+                                    @if(auth()->user()->hasAnyRoles(['secretaire', 'admin', 'superadmin']) && 
+                                        in_array($parapheur->statut->code ?? $parapheur->statut, ['creer', 'rejete']))
+                                    <a href="{{ route('parapheurs.deposer-pieces', $parapheur) }}" class="btn btn-warning" title="Déposer les pièces">
+                                        <i class="fas fa-upload"></i>
+                                    </a>
+                                    @endif
+
+                                    @if(auth()->user()->hasAnyRoles(['agent', 'gestionnaire']) && 
+                                        ($parapheur->statut->code ?? $parapheur->statut) === 'analyse')
+                                    <a href="{{ route('parapheurs.verifier-factures', $parapheur) }}" class="btn btn-info" title="Vérifier les factures">
+                                        <i class="fas fa-check-double"></i>
+                                    </a>
+                                    @endif
+                                </div>
+                            </td>
                         </tr>
                         @empty
                         <tr>
                             <td colspan="8" class="text-center text-muted py-4">
-                                <i class="fas fa-inbox fa-2x mb-3"></i>
-                                <p>Aucun parapheur trouvé</p>
+                                <i class="fas fa-inbox fa-3x d-block mb-3"></i>
+                                <p class="mb-2">Aucun parapheur trouvé</p>
+                                @if(auth()->user()->hasAnyRoles(['secretaire', 'admin', 'superadmin']))
+                                <a href="{{ route('parapheurs.create') }}" class="btn btn-primary btn-sm">
+                                    <i class="fas fa-plus mr-1"></i> Créer le premier parapheur
+                                </a>
+                                @endif
                             </td>
                         </tr>
                         @endforelse
