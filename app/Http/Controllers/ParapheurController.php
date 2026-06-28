@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
 
 class ParapheurController extends Controller
 {
@@ -88,31 +89,52 @@ class ParapheurController extends Controller
         return view('parapheurs.rejetes', compact('parapheurs'));
     }
     
-     public function create()
-{
-    $types = [
-        'exoneration' => 'Exonération ouverte (TVA, CSS, etc.)',
-        'dispense'    => 'Dispense ouverte (TVA, CSS, etc.)',
-    ];
-
-    return view('parapheurs.create', compact('types'));
-}
-    public function store(Request $request)
+    public function create()
     {
-        $request->validate([
-            'objet' => 'required|string|max:500',
-            'type_attestation' => 'required|in:exoneration,dispense',
-            'expediteur' => 'required|string|max:255',
-            'service_expediteur' => 'required|string|max:255',
-            'date_reception' => 'required|date',
-            'date_limite' => 'required|date|after_or_equal:date_reception',
-            'priorite' => 'required|in:bas,normal,urgent',
-        ]);
-        
-        // Générer la référence
-        $statutCreer = ParapheurStatut::where('code', 'creer')->first();
-        $reference = 'PAR-' . date('Ymd') . '-' . str_pad(Parapheur::count() + 1, 4, '0', STR_PAD_LEFT);
-        
+        $types = [
+            'exoneration' => 'Exonération ouverte (TVA, CSS, etc.)',
+            'dispense'    => 'Dispense ouverte (TVA, CSS, etc.)',
+        ];
+
+        return view('parapheurs.create', compact('types'));
+    }
+
+    /**
+     * STORE - Création d'un parapheur (CORRIGÉE)
+     */
+    public function store(Request $request)
+{
+    // Définir des valeurs par défaut
+    $request->merge([
+        'objet' => $request->objet ?? 'Demande d\'exonération',
+        'expediteur' => $request->expediteur ?? 'Contribuable',
+        'priorite' => $request->priorite ?? 'normale',
+    ]);
+
+    // Validation
+    $validator = Validator::make($request->all(), [
+        'objet' => 'nullable|string|max:500',
+        'type_attestation' => 'required|in:exoneration_tva,dispense_tva,exoneration_css,dispense_css',
+        'expediteur' => 'nullable|string|max:255',
+        'service_expediteur' => 'required|string|max:255',
+        'date_reception' => 'required|date',
+        'date_limite' => 'required|date|after_or_equal:date_reception',
+        'priorite' => 'nullable|in:basse,normale,haute,urgente',
+    ]);
+
+    if ($validator->fails()) {
+        return back()->withErrors($validator)->withInput();
+    }
+
+    // Générer la référence
+    $statutCreer = ParapheurStatut::where('code', 'creer')->first();
+    if (!$statutCreer) {
+        return back()->with('error', 'Statut "creer" introuvable.');
+    }
+
+    $reference = 'PAR-' . date('Ymd') . '-' . str_pad(Parapheur::count() + 1, 4, '0', STR_PAD_LEFT);
+
+    try {
         $parapheur = Parapheur::create([
             'reference' => $reference,
             'objet' => $request->objet,
@@ -121,13 +143,17 @@ class ParapheurController extends Controller
             'service_expediteur' => $request->service_expediteur,
             'date_reception' => $request->date_reception,
             'date_limite' => $request->date_limite,
+            'date_creation' => now()->format('Y-m-d'), // ⭐ AJOUTÉ
+            'date_echeance' => $request->date_limite, // ⭐ AJOUTÉ
             'priorite' => $request->priorite,
             'statut_id' => $statutCreer->id,
             'created_by' => Auth::id(),
-            'current_role_id' => Auth::user()->role_id,
+            'createur_id' => Auth::id(), // ⭐ AJOUTÉ
+            'current_role_id' => Auth::user()->role_id ?? 1,
+            'service_id' => 1,
+            'direction_id' => 1,
         ]);
-        
-        // Historique
+
         ParapheurHistorique::create([
             'parapheur_id' => $parapheur->id,
             'user_id' => Auth::id(),
@@ -135,11 +161,14 @@ class ParapheurController extends Controller
             'nouveau_statut_id' => $statutCreer->id,
             'commentaire' => 'Parapheur créé par le secrétariat'
         ]);
-        
-        return redirect()->route('parapheurs.show', $parapheur)
-            ->with('success', 'Parapheur créé avec succès !');
+
+        return redirect()->route('parapheurs.index')
+            ->with('success', 'Parapheur créé avec succès ! Réf: ' . $reference);
+
+    } catch (\Exception $e) {
+        return back()->with('error', 'Erreur : ' . $e->getMessage())->withInput();
     }
-    
+}
     public function transmettreAgent(Parapheur $parapheur)
     {
         // Vérifier que l'utilisateur peut faire cette action
@@ -212,15 +241,6 @@ class ParapheurController extends Controller
         $parapheur->update([
             'statut_id' => $statutAttenteValidation->id,
             'current_role_id' => $roleChefService->id,
-        ]);
-        
-        ParapheurHistorique::create([
-            'parapheur_id' => $parapheur->id,
-            'user_id' => Auth::id(),
-            'action' => 'Transmis au Chef de Service',
-            'ancien_statut_id' => $parapheur->statut_id,
-            'nouveau_statut_id' => $statutAttenteValidation->id,
-            'commentaire' => $request->commentaire ?? 'Analyse terminée, transmis pour validation'
         ]);
         
         return redirect()->route('parapheurs.show', $parapheur)

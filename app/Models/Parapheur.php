@@ -60,11 +60,6 @@ class Parapheur extends Model
         return $this->belongsTo(ParapheurStatut::class, 'statut_id');
     }
 
-    public function typeCourrier(): BelongsTo
-    {
-        return $this->belongsTo(TypeCourrier::class, 'type_courrier_id');
-    }
-
     public function createur(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');

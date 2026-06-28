@@ -3,6 +3,17 @@
 @section('title', 'Enregistrement d\'un Parapheur - GDF')
 
 @section('content')
+@if(session('success'))
+    <div class="alert alert-success">
+        {{ session('success') }}
+    </div>
+@endif
+
+@if(session('error'))
+    <div class="alert alert-danger">
+        {{ session('error') }}
+    </div>
+@endif
 <div class="container-fluid">
     <!-- Breadcrumb -->
     <div class="row mb-3">
@@ -40,61 +51,64 @@
                 <form action="{{ route('parapheurs.store') }}" method="POST" enctype="multipart/form-data">
                     @csrf
 
+                    
+
                     <!-- Ligne : Type d'attestation + Service concerné (côte à côte) -->
-<div class="row">
-    <div class="col-md-6">
-        <div class="mb-3">
-            <label for="type_attestation" class="form-label" style="color: #1a1a1a !important; font-weight: 600;">
-                <i class="fas fa-certificate me-1"></i>Type d'attestation <span class="text-danger">*</span>
-            </label>
-            <select name="type_attestation" id="type_attestation" 
-                    class="form-control @error('type_attestation') is-invalid @enderror" 
-                    required
-                    style="border: 1px solid #ced4da; border-radius: 6px; padding: 10px 12px; color: #1a1a1a;">
-                <option value="">Sélectionner</option>
-                <option value="exoneration_tva" {{ old('type_attestation') == 'exoneration_tva' ? 'selected' : '' }}>
-                    Exonération ouverte TVA
-                </option>
-                <option value="dispense_tva" {{ old('type_attestation') == 'dispense_tva' ? 'selected' : '' }}>
-                    Dispense ouverte TVA
-                </option>
-                <option value="exoneration_css" {{ old('type_attestation') == 'exoneration_css' ? 'selected' : '' }}>
-                    Exonération ouverte CSS
-                </option>
-                <option value="dispense_css" {{ old('type_attestation') == 'dispense_css' ? 'selected' : '' }}>
-                    Dispense ouverte CSS
-                </option>
-            </select>
-            @error('type_attestation')
-                <div class="invalid-feedback">{{ $message }}</div>
-            @enderror
-            <small style="color: #6c757d !important;">Type d'attestation délivrée au contribuable</small>
-        </div>
-    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="type_attestation" class="form-label" style="color: #1a1a1a !important; font-weight: 600;">
+                                    <i class="fas fa-certificate me-1"></i>Type d'attestation <span class="text-danger">*</span>
+                                </label>
+                                <select name="type_attestation" id="type_attestation" 
+                                        class="form-control @error('type_attestation') is-invalid @enderror" 
+                                        required
+                                        style="border: 1px solid #ced4da; border-radius: 6px; padding: 10px 12px; color: #1a1a1a;">
+                                    <option value="">Sélectionner</option>
+                                    <option value="exoneration_tva" {{ old('type_attestation') == 'exoneration_tva' ? 'selected' : '' }}>
+                                        Exonération ouverte TVA
+                                    </option>
+                                    <option value="dispense_tva" {{ old('type_attestation') == 'dispense_tva' ? 'selected' : '' }}>
+                                        Dispense ouverte TVA
+                                    </option>
+                                    <option value="exoneration_css" {{ old('type_attestation') == 'exoneration_css' ? 'selected' : '' }}>
+                                        Exonération ouverte CSS
+                                    </option>
+                                    <option value="dispense_css" {{ old('type_attestation') == 'dispense_css' ? 'selected' : '' }}>
+                                        Dispense ouverte CSS
+                                    </option>
+                                </select>
+                                @error('type_attestation')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                                <small style="color: #6c757d !important;">Type d'attestation délivrée au contribuable</small>
+                            </div>
+                        </div>
 
-    <div class="col-md-6">
-        <div class="mb-3">
-            <label for="service_expediteur" class="form-label" style="color: #1a1a1a !important; font-weight: 600;">
-                <i class="fas fa-building me-1"></i>Service concerné <span class="text-danger">*</span>
-            </label>
-            <select name="service_expediteur" 
-                    id="service_expediteur" 
-                    class="form-control @error('service_expediteur') is-invalid @enderror" 
-                    required
-                    style="border: 1px solid #ced4da; border-radius: 6px; padding: 10px 12px; color: #1a1a1a;">
-                <option value="">Sélectionnez un service</option>
-                <option value="IFD" {{ old('service_expediteur') == 'IFD' ? 'selected' : '' }}>IFD - Incitations Fiscales pour le Développement</option>
-                <option value="GFMPF" {{ old('service_expediteur') == 'GFMPF' ? 'selected' : '' }}>GFMPF - Gestion Fiscales Mines, Pétrole et Forêts</option>
-                <option value="ZES" {{ old('service_expediteur') == 'ZES' ? 'selected' : '' }}>ZES - Zones Économiques Spéciales</option>
-            </select>
-            @error('service_expediteur')
-                <div class="invalid-feedback">{{ $message }}</div>
-            @enderror
-            <small style="color: #6c757d !important;">Service qui a délivré l'attestation</small>
-        </div>
-    </div>
-</div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="service_expediteur" class="form-label" style="color: #1a1a1a !important; font-weight: 600;">
+                                    <i class="fas fa-building me-1"></i>Service concerné <span class="text-danger">*</span>
+                                </label>
+                                <select name="service_expediteur" 
+                                        id="service_expediteur" 
+                                        class="form-control @error('service_expediteur') is-invalid @enderror" 
+                                        required
+                                        style="border: 1px solid #ced4da; border-radius: 6px; padding: 10px 12px; color: #1a1a1a;">
+                                    <option value="">Sélectionnez un service</option>
+                                    <option value="IFD" {{ old('service_expediteur') == 'IFD' ? 'selected' : '' }}>IFD - Incitations Fiscales pour le Développement</option>
+                                    <option value="GFMPF" {{ old('service_expediteur') == 'GFMPF' ? 'selected' : '' }}>GFMPF - Gestion Fiscales Mines, Pétrole et Forêts</option>
+                                    <option value="ZES" {{ old('service_expediteur') == 'ZES' ? 'selected' : '' }}>ZES - Zones Économiques Spéciales</option>
+                                </select>
+                                @error('service_expediteur')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                                <small style="color: #6c757d !important;">Service qui a délivré l'attestation</small>
+                            </div>
+                        </div>
+                    </div>
 
+                    
                     <div class="row">
                         <!-- Date de réception -->
                         <div class="col-md-6">
@@ -136,6 +150,7 @@
                         </div>
                     </div>
 
+                    
 
                     <!-- ============================================ -->
                     <!-- UPLOAD DE FICHIERS (PIÈCES JOINTES) -->

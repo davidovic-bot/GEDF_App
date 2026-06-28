@@ -88,7 +88,7 @@
                                 <div>{{ Str::limit($parapheur->courrier->objet ?? $parapheur->objet, 50) }}</div>
                                 <small class="text-muted">Ref: {{ $parapheur->courrier->reference ?? $parapheur->reference }}</small>
                             </td>
-                            <td>{{ $parapheur->typeCourrier->nom ?? $parapheur->type_courrier_id ?? '-' }}</td>
+                            <td>{{ $parapheur->type_attestation ?? '-' }}</td>
                             <td>{{ $parapheur->service_expediteur ?? '-' }}</td>
                             <td>@include('parapheurs.partials.statut-badge')</td>
                             <td>
